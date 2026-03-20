@@ -22,7 +22,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
 │   ├── api-server/         # Express API server
-│   └── bizlaunch/          # BizLaunch React web app
+│   └── bizlaunch/          # Founded Right React web app
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
@@ -98,7 +98,7 @@ React hook (`useAuth`) for Replit OIDC auth on the web. Exports `useAuth()` whic
 
 ### `artifacts/bizlaunch` (`@workspace/bizlaunch`)
 
-BizLaunch — a comprehensive business launch platform. Single-page React + Vite app with 8 screens:
+Founded Right — a comprehensive business launch platform. Single-page React + Vite app with 8 screens:
 - **Dashboard**: Score ring SVG, category progress bars, funding matches
 - **Checklist**: 46 items across 8 categories (Legal, Banking, Credit, Federal, Certs, Grants, Presence, Loans) with filter and accordion
 - **Documents**: Document vault linked to checklist state

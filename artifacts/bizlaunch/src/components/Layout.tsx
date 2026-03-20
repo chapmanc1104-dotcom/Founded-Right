@@ -33,7 +33,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Rocket className="w-5 h-5 text-white" />
             </div>
             <span className="font-display font-bold text-2xl tracking-tight text-foreground">
-              BizLaunch
+              Founded Right
             </span>
           </Link>
 
@@ -108,7 +108,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
             <Rocket className="w-6 h-6 text-primary" />
-            <span className="font-display font-bold text-xl text-foreground">BizLaunch</span>
+            <span className="font-display font-bold text-xl text-foreground">Founded Right</span>
           </div>
           <p className="text-muted-foreground text-sm">
             Empowering the next generation of founders.

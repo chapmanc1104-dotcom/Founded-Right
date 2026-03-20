@@ -380,7 +380,7 @@ export default function App() {
         <style>{css}</style>
         <div className="landing">
           <div style={{ textAlign: "center", maxWidth: 520 }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 42, fontWeight: 700, color: "#f0ede8", letterSpacing: "-1px", marginBottom: 12 }}>BizLaunch</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 42, fontWeight: 700, color: "#f0ede8", letterSpacing: "-1px", marginBottom: 12 }}>Founded Right</div>
             <div style={{ fontSize: 18, color: "#666", marginBottom: 32, lineHeight: 1.6 }}>Your complete business launch platform — checklist, funding, AI assistant, and more.</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 40, textAlign: "left" }}>
               {[
@@ -416,7 +416,7 @@ function Dashboard() {
   const [filter, setFilter] = useState("all");
   const [fundFilter, setFundFilter] = useState("all");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Hi! I'm your BizLaunch AI assistant. I can help with your checklist, funding opportunities, certifications, and more. What would you like to know?" }
+    { role: "assistant", content: "Hi! I'm your Founded Right AI assistant. I can help with your checklist, funding opportunities, certifications, and more. What would you like to know?" }
   ]);
   const [chatInput, setChatInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -523,7 +523,7 @@ function Dashboard() {
     const completedItems = SECTIONS.flatMap(s => s.items.filter(i => checklist[i.id]).map(i => i.label)).slice(0, 10);
     const pendingItems = SECTIONS.flatMap(s => s.items.filter(i => !checklist[i.id]).map(i => i.label)).slice(0, 10);
 
-    const systemPrompt = `You are BizLaunch Assistant, an expert business setup advisor helping a small business owner structure their LLC for grants, loans, and government contracts.
+    const systemPrompt = `You are Founded Right Assistant, an expert business setup advisor helping a small business owner structure their LLC for grants, loans, and government contracts.
 
 Business profile:
 - Business name: ${profile.businessName || "not yet set"}
@@ -773,7 +773,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
       <div className="app">
         <div className="sidebar">
           <div className="brand">
-            <div className="brand-name">BizLaunch</div>
+            <div className="brand-name">Founded Right</div>
             <div className="brand-sub">{profile.businessName || "Business setup platform"}</div>
           </div>
           {navItems.map(n => {

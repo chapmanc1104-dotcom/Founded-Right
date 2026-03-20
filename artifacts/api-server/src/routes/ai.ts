@@ -45,7 +45,7 @@ router.post("/ai/chat", async (req: Request, res: Response) => {
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 8192,
-      system: systemPrompt || "You are BizLaunch Assistant, an expert business setup advisor helping small business owners structure their companies for grants, loans, and government contracts. Be concise, specific, and actionable. Keep answers under 200 words unless the question requires more.",
+      system: systemPrompt || "You are Founded Right Assistant, an expert business setup advisor helping small business owners structure their companies for grants, loans, and government contracts. Be concise, specific, and actionable. Keep answers under 200 words unless the question requires more.",
       messages,
     });
 

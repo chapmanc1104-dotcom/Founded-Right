@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "BizLaunch"
+title = "Founded Right"
 version = "1.0.0"
 id = "artifacts/bizlaunch"
 router = "path"
