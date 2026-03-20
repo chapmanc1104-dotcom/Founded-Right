@@ -416,7 +416,29 @@ function Dashboard() {
   async function fetchProfile() {
     try {
       const r = await fetch(`${API}/profile`, { credentials: "include" });
-      if (r.ok) { const d = await r.json(); setProfile({ ...defaultProfile, ...d, naicsCodes: d.naicsCodes ?? [] }); }
+      if (r.ok) {
+        const d = await r.json();
+        setProfile({
+          ...defaultProfile,
+          ...d,
+          businessName: d.businessName ?? "",
+          entityType: d.entityType ?? "LLC",
+          state: d.state ?? "MD",
+          industry: d.industry ?? "",
+          ownerName: d.ownerName ?? "",
+          contactEmail: d.contactEmail ?? "",
+          contactPhone: d.contactPhone ?? "",
+          zipCode: d.zipCode ?? "",
+          yearsInBusiness: d.yearsInBusiness ?? "0",
+          employees: d.employees ?? "1",
+          annualRevenue: d.annualRevenue ?? "0",
+          missionStatement: d.missionStatement ?? "",
+          fundingAmount: d.fundingAmount ?? "",
+          fundingGoals: d.fundingGoals ?? [],
+          certifications: d.certifications ?? [],
+          naicsCodes: d.naicsCodes ?? [],
+        });
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }
@@ -1134,9 +1156,9 @@ function Onboarding({ profile, onboardStep, setOnboardStep, saveProfile, complet
   };
   const canAdvance = () => {
     if (onboardStep === 0) return true;
-    if (onboardStep === 1) return profile.businessName.trim().length > 0 && !!profile.industry;
-    if (onboardStep === 2) return profile.ownerName.trim().length > 0;
-    if (onboardStep === 3) return profile.fundingGoals.length > 0;
+    if (onboardStep === 1) return (profile.businessName ?? "").trim().length > 0 && !!profile.industry;
+    if (onboardStep === 2) return (profile.ownerName ?? "").trim().length > 0;
+    if (onboardStep === 3) return (profile.fundingGoals ?? []).length > 0;
     return true;
   };
 
