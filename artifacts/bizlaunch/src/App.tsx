@@ -191,33 +191,35 @@ const defaultProfile: Profile = {
   naicsCodes: [],
 };
 
-function FoundedRightLogo({ variant = "full", height: h = 28 }: { variant?: "full" | "sidebar" | "icon"; height?: number }) {
-  const S = 11, G = 2.5;
-  const navy = variant === "sidebar" ? "#FFFFFF" : "#1B3A6B";
+function FoundedRightLogo({ variant = "full", height: h = 36 }: { variant?: "full" | "sidebar" | "icon"; height?: number }) {
   const gold = "#C9A84C";
-  const blocks = [
-    { x: 0,           y: S + G, fill: navy },
-    { x: S + G,       y: S + G, fill: gold },
-    { x: S + G,       y: 0,     fill: navy },
-    { x: 2 * (S + G), y: 0,     fill: gold },
-  ];
+  const c1 = variant === "sidebar" ? "#FFFFFF" : "#1B3A6B";
+  const c2 = gold;
+  const c3 = variant === "sidebar" ? "#FFFFFF" : "#1B3A6B";
+  const c4 = gold;
+
   if (variant === "icon") {
-    const bw = 3 * S + 2 * G;
-    const bh = 2 * S + G;
     return (
-      <svg height={h} viewBox={`0 0 ${bw} ${bh}`} fill="none" style={{ display: "block" }}>
-        {blocks.map((b, i) => <rect key={i} x={b.x} y={b.y} width={S} height={S} rx={1.5} fill={b.fill} />)}
+      <svg height={h} viewBox="0 0 48 48" fill="none" style={{ display: "block" }}>
+        <rect x="2"  y="28" width="12" height="12" rx="3" fill={c1}/>
+        <rect x="14" y="34" width="12" height="12" rx="3" fill={c2}/>
+        <rect x="26" y="18" width="12" height="12" rx="3" fill={c3}/>
+        <rect x="38" y="4"  width="12" height="12" rx="3" fill={c4}/>
       </svg>
     );
   }
+
   const divColor = variant === "sidebar" ? "rgba(255,255,255,0.22)" : "#CBD5E1";
-  const wordFounded = navy;
+  const wordFoundedFill = variant === "sidebar" ? "#FFFFFF" : "#1B3A6B";
   return (
-    <svg height={h} viewBox="0 0 130 28" fill="none" style={{ display: "block", overflow: "visible" }}>
-      {blocks.map((b, i) => <rect key={i} x={b.x} y={b.y + 2} width={S} height={S} rx={1.5} fill={b.fill} />)}
-      <line x1="49" y1="4" x2="49" y2="24" stroke={divColor} strokeWidth="1" strokeLinecap="round"/>
-      <text x="60" y="11" fontFamily="'Plus Jakarta Sans',sans-serif" fontSize="11.5" fontWeight="700" fill={wordFounded}>Founded</text>
-      <text x="60" y="24" fontFamily="'Plus Jakarta Sans',sans-serif" fontSize="11.5" fontWeight="700" fill={gold}>Right</text>
+    <svg height={h} viewBox="0 0 168 48" fill="none" style={{ display: "block", overflow: "visible" }}>
+      <rect x="2"  y="28" width="12" height="12" rx="3" fill={c1}/>
+      <rect x="14" y="34" width="12" height="12" rx="3" fill={c2}/>
+      <rect x="26" y="18" width="12" height="12" rx="3" fill={c3}/>
+      <rect x="38" y="4"  width="12" height="12" rx="3" fill={c4}/>
+      <line x1="60" y1="6" x2="60" y2="42" stroke={divColor} strokeWidth="1" strokeLinecap="round"/>
+      <text x="70" y="22" fontFamily="'Plus Jakarta Sans',sans-serif" fontSize="15" fontWeight="700" fill={wordFoundedFill}>Founded</text>
+      <text x="70" y="41" fontFamily="'Plus Jakarta Sans',sans-serif" fontSize="15" fontWeight="700" fill={gold}>Right</text>
     </svg>
   );
 }
