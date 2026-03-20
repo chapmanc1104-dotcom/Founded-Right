@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
+import { ArrowRight, ArrowDown, ChevronDown, CheckCircle2, TrendingUp, Search, FileText, LayoutList, Bot, Target, ShieldAlert, Award } from "lucide-react";
 
 const API = import.meta.env.BASE_URL + "api";
 
@@ -417,157 +418,221 @@ const landingCss = `
 `;
 
 function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: () => void }) {
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }),
-      { threshold: 0.12 }
-    );
-    document.querySelectorAll(".fade-up").forEach(el => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-
   return (
-    <>
-      <style>{css}</style>
-      <style>{landingCss}</style>
-      <div className="lp">
+    <div className="min-h-screen bg-white text-slate-800" style={{ fontFamily: "Inter, sans-serif" }}>
 
-        {/* Nav */}
-        <nav className="lp-nav">
-          <div className="lp-nav-logo">
+      {/* STICKY NAV */}
+      <nav className="fixed top-0 left-0 right-0 h-20 bg-white/95 backdrop-blur-md border-b border-slate-200 z-50 flex items-center shadow-sm transition-all">
+        <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center">
+          <div className="flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity">
             <FoundedRightLogo variant="full" height={30} />
           </div>
-          <div className="lp-nav-actions">
-            <button className="lp-nav-signin" onClick={onSignIn}>Sign in</button>
-            <button className="lp-nav-cta" onClick={onSignUp}>Sign up free</button>
+          <div className="flex items-center gap-6">
+            <button
+              onClick={onSignIn}
+              className="text-[#1B3A6B] font-semibold hover:text-[#2D5BE3] transition-colors flex items-center gap-1 group"
+            >
+              Sign in <ArrowRight className="w-4 h-4 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-1 transition-all" />
+            </button>
+            <button
+              onClick={onSignUp}
+              className="bg-[#C9A84C] hover:bg-[#D4B663] text-[#1B3A6B] hover:shadow-lg font-bold px-6 py-2.5 rounded-md transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
+              style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
+            >
+              Sign up free <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        {/* Hero */}
-        <section className="lp-section" style={{ textAlign: "center", paddingTop: 120, paddingBottom: 120 }}>
-          <div className="lp-label">Business setup platform for LLC owners</div>
-          <h1 className="lp-h1">Stop guessing<br />what to do next.</h1>
-          <p className="lp-sub" style={{ margin: "0 auto" }}>
+      {/* HERO */}
+      <section className="relative pt-36 pb-32 px-6 flex flex-col items-center justify-center min-h-[90vh] text-center bg-gradient-to-b from-slate-50 to-white">
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#EFF6FF] text-[#1B3A6B] font-semibold text-sm mb-8 border border-blue-100"
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C9A84C] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#C9A84C]"></span>
+            </span>
+            Business setup platform for LLC owners <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+
+          <h1 className="text-5xl font-extrabold text-[#1B3A6B] tracking-tight leading-[1.1] mb-8" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "clamp(2.5rem, 6vw, 4.5rem)" }}>
+            Stop guessing <br />what to do next.
+          </h1>
+
+          <p className="text-xl text-slate-600 max-w-3xl mb-12 leading-relaxed">
             FoundedRight walks you step by step through everything your LLC needs to get funded, win government contracts, and build a professional presence — all in one place.
           </p>
-          <div className="lp-hero-btns" style={{ justifyContent: "center" }}>
-            <button className="lp-btn-primary" onClick={onSignUp}>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full">
+            <button
+              onClick={onSignUp}
+              className="group flex items-center justify-center gap-2 bg-[#1B3A6B] hover:bg-[#2D5BE3] text-white font-bold rounded-lg transition-all hover:shadow-[0_8px_30px_rgb(27,58,107,0.3)] transform hover:-translate-y-1"
+              style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 56, width: 200 }}
+            >
               Sign up free
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="lp-btn-ghost" onClick={() => scrollTo("lp-problem")}>See how it works</button>
-          </div>
-        </section>
-
-        <div className="lp-divider" />
-
-        {/* Problem */}
-        <section id="lp-problem" className="lp-section">
-          <div style={{ textAlign: "center" }}>
-            <div className="lp-label fade-up">The problem</div>
-            <h2 className="lp-h2 fade-up d1" style={{ margin: "0 auto 14px" }}>Starting an LLC is the easy part.</h2>
-            <p className="lp-sub fade-up d2" style={{ margin: "0 auto" }}>Most founders file the paperwork and then hit a wall. Nobody tells you what happens next — or what it actually takes to get funded.</p>
-          </div>
-          <div className="lp-grid-3">
-            {[
-              { num: "01", title: "You don't know which steps actually matter for funding", body: "There are hundreds of things you could do. Most don't move the needle. Knowing the right 46 steps — in the right order — changes everything." },
-              { num: "02", title: "Grant and loan applications keep getting rejected or ignored", body: "It's not just what you apply for — it's how ready your business looks on paper. Most rejections happen before anyone reads your application." },
-              { num: "03", title: "Government contracts feel impossible to break into", body: "SAM.gov, NAICS codes, capability statements, set-asides — the terminology alone is a barrier. But billions in contracts go to small businesses every year." },
-            ].map((p, i) => (
-              <div key={i} className={`lp-card fade-up d${i + 1}`}>
-                <div className="lp-pain-num">{p.num}</div>
-                <div className="lp-card-title">{p.title}</div>
-                <div className="lp-card-body">{p.body}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div className="lp-divider" />
-
-        {/* Features */}
-        <section id="lp-features" className="lp-section" style={{ background: "#fff" }}>
-          <div style={{ textAlign: "center" }}>
-            <div className="lp-label fade-up">What's inside</div>
-            <h2 className="lp-h2 fade-up d1" style={{ margin: "0 auto 14px" }}>Everything you need.<br />Nothing you don't.</h2>
-            <p className="lp-sub fade-up d2" style={{ margin: "0 auto" }}>One platform built specifically for new LLC owners who want to get funded, get contracts, and get taken seriously.</p>
-          </div>
-          <div className="lp-grid-3">
-            {[
-              { icon: "✅", title: "Personalized Setup Checklist", body: "46 steps across 8 categories — legal, banking, credit, federal registrations, presence, and more. Each item explains why it matters." },
-              { icon: "💰", title: "AI-Matched Funding Opportunities", body: "Grants, loans, and contracts matched to your business profile. Know which ones you're ready for and what's still blocking you." },
-              { icon: "🏛️", title: "NAICS Code Finder", body: "Describe your business in plain English and get the exact NAICS codes you need for government contracting and federal grant eligibility." },
-              { icon: "📄", title: "Capability Statement Generator", body: "AI generates a professional one-pager from your business profile. Ready to attach to any government contract application." },
-              { icon: "📋", title: "Application Tracker", body: "Track every grant, loan, and contract you've applied for. Log statuses, deadlines, and follow-up notes in one place." },
-              { icon: "🤖", title: "AI Assistant That Knows Your Business", body: "Ask anything about your checklist, certifications, or funding options. Your AI assistant has full context of your business profile." },
-            ].map((f, i) => (
-              <div key={i} className={`lp-card fade-up d${(i % 3) + 1}`}>
-                <div className="lp-card-icon">{f.icon}</div>
-                <div className="lp-card-title">{f.title}</div>
-                <div className="lp-card-body">{f.body}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div className="lp-divider" />
-
-        {/* Social proof */}
-        <section id="lp-proof" className="lp-section-sm" style={{ background: "#F7F8FA" }}>
-          <div style={{ textAlign: "center" }}>
-            <div className="lp-label fade-up">By the numbers</div>
-            <h2 className="lp-h2 fade-up d1" style={{ margin: "0 auto 14px" }}>Built for new LLC owners<br />who mean business.</h2>
-          </div>
-          <div className="lp-grid-3" style={{ marginTop: 48 }}>
-            {[
-              { val: "5.5M", label: "New businesses formed in the US in 2023 alone — a record high." },
-              { val: "21.6M", label: "Active LLCs currently operating in the United States." },
-              { val: "Billions", label: "In federal grants go unclaimed every year because applicants aren't structured to qualify." },
-            ].map((s, i) => (
-              <div key={i} className={`lp-card fade-up d${i + 1}`} style={{ textAlign: "center" }}>
-                <div className="lp-stat-val">{s.val}</div>
-                <div className="lp-stat-label">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div className="lp-divider" />
-
-        {/* CTA */}
-        <section className="lp-section-sm" style={{ background: "#fff" }}>
-          <div className="lp-cta-wrap fade-up">
-            <div className="lp-label" style={{ marginBottom: 24 }}>Get started today</div>
-            <h2 className="lp-h2" style={{ marginBottom: 16 }}>Your LLC deserves a real foundation.</h2>
-            <p className="lp-sub" style={{ margin: "0 auto 36px", maxWidth: 500 }}>
-              Join thousands of business owners who are getting structured, getting funded, and getting contracts.
-            </p>
-            <button className="lp-btn-primary" onClick={onSignUp} style={{ fontSize: 17, padding: "17px 40px" }}>
-              Sign up free
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <button
+              onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+              className="group flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-[#1B3A6B] font-bold rounded-lg transition-all hover:shadow-md border-2 border-[#1B3A6B]"
+              style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 56, width: 200 }}
+            >
+              See how it works
+              <ArrowDown className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
             </button>
           </div>
-        </section>
+          <p className="mt-4 text-sm text-slate-500 font-medium flex items-center gap-1">
+            <CheckCircle2 className="w-4 h-4 text-green-500" /> No credit card required to start
+          </p>
+        </div>
 
-        {/* Footer */}
-        <footer style={{ borderTop: "1px solid #1a1a1e", padding: "32px 24px", background: "#F7F8FA" }}>
-          <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-            <div className="lp-nav-logo">
-              <FoundedRightLogo variant="full" height={26} />
-            </div>
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-              <button className="lp-footer-link" onClick={() => {}}>Privacy Policy</button>
-              <button className="lp-footer-link" onClick={() => {}}>Terms of Service</button>
-              <button className="lp-footer-link" onClick={() => {}}>Contact</button>
-            </div>
-            <span className="lp-footer-copy">© 2026 FoundedRight</span>
+        <div
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer group"
+          onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+        >
+          <span className="text-xs font-semibold text-slate-400 group-hover:text-[#1B3A6B] transition-colors uppercase tracking-widest">Scroll</span>
+          <ChevronDown className="w-6 h-6 text-slate-400 group-hover:text-[#1B3A6B] animate-bounce transition-colors" />
+        </div>
+      </section>
+
+      {/* PROBLEM */}
+      <section className="py-24 px-6 bg-white border-y border-slate-100 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-16">
+            <h2 className="text-4xl font-bold text-[#1B3A6B] mb-6" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>Why most LLCs stay stuck.</h2>
+            <div className="w-24 h-1.5 bg-[#C9A84C] rounded-full"></div>
           </div>
-        </footer>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { num: "01", title: "You don't know which steps actually matter for funding", desc: "There are hundreds of things you could do. Most don't move the needle. Knowing the right 46 steps — in the right order — changes everything.", icon: <Target className="w-6 h-6 text-[#1B3A6B]" /> },
+              { num: "02", title: "Grant and loan applications keep getting rejected or ignored", desc: "It's not just what you apply for — it's how ready your business looks on paper. Most rejections happen before anyone reads your application.", icon: <ShieldAlert className="w-6 h-6 text-[#1B3A6B]" /> },
+              { num: "03", title: "Government contracts feel impossible to break into", desc: "SAM.gov, NAICS codes, capability statements, set-asides — the terminology alone is a barrier. But billions in contracts go to small businesses every year.", icon: <Award className="w-6 h-6 text-[#1B3A6B]" /> },
+            ].map((pt, i) => (
+              <div key={i} className="group relative flex flex-col p-8 rounded-2xl bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 transition-all duration-300 hover:shadow-xl">
+                <div className="absolute top-0 right-0 p-8 text-6xl font-black text-slate-100 group-hover:text-blue-50 transition-colors" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", zIndex: 0 }}>
+                  {pt.num}
+                </div>
+                <div style={{ position: "relative", zIndex: 1 }} className="flex-grow">
+                  <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-slate-100">
+                    {pt.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-4 leading-snug group-hover:text-[#1B3A6B] transition-colors" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>{pt.title}</h3>
+                  <p className="text-slate-600 leading-relaxed mb-8">{pt.desc}</p>
+                </div>
+                <div style={{ position: "relative", zIndex: 1 }} className="mt-auto">
+                  <span className="inline-flex items-center gap-2 font-bold text-[#1B3A6B] group-hover:text-[#2D5BE3] transition-colors">
+                    Learn more <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      </div>
-    </>
+      {/* FEATURES */}
+      <section className="py-24 px-6 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-[#1B3A6B] mb-6" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>Everything you need, structured perfectly.</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">One platform built specifically for new LLC owners who want to get funded, get contracts, and get taken seriously.</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { title: "Personalized Setup Checklist", desc: "46 precise steps across 8 categories — legal, banking, credit, federal registrations, presence, and more.", icon: <CheckCircle2 className="w-5 h-5" /> },
+              { title: "AI-Matched Funding", desc: "Grants, loans, and contracts matched to your industry, stage, and location. Know what you're ready for.", icon: <TrendingUp className="w-5 h-5" /> },
+              { title: "NAICS Code Finder", desc: "Describe your business in plain English and get the exact NAICS codes you need for government contracting.", icon: <Search className="w-5 h-5" /> },
+              { title: "Capability Statement Generator", desc: "AI generates a professional one-pager from your business profile — ready for any government contract application.", icon: <FileText className="w-5 h-5" /> },
+              { title: "Application Tracker", desc: "Never miss a deadline. Track every grant, loan, and contract application in one pipeline.", icon: <LayoutList className="w-5 h-5" /> },
+              { title: "AI Assistant", desc: "Ask anything about your checklist, certifications, or funding options — your AI has full context of your business.", icon: <Bot className="w-5 h-5" /> },
+            ].map((feat, i) => (
+              <div
+                key={i}
+                className="group relative bg-[#EFF6FF] p-8 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white border border-blue-100 hover:border-blue-300"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[#1B3A6B] text-white flex items-center justify-center mb-6 shadow-sm group-hover:bg-[#C9A84C] transition-colors">
+                  {feat.icon}
+                </div>
+                <h3 className="text-lg font-bold text-[#1B3A6B] mb-3" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>{feat.title}</h3>
+                <p className="text-slate-600 pr-6">{feat.desc}</p>
+                <div className="absolute bottom-6 right-6 opacity-40 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1">
+                  <ArrowRight className="w-5 h-5 text-[#1B3A6B]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* STATS */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-12 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+            {[
+              { stat: "5.5M", label: "New businesses formed in 2023", context: "Competition is fierce." },
+              { stat: "21.6M", label: "Active LLCs in the US", context: "You need to stand out." },
+              { stat: "Billions", label: "In federal grants go unclaimed", context: "Because businesses aren't ready." },
+            ].map((item, i) => (
+              <div key={i} className="pt-8 md:pt-0 md:px-12 flex flex-col items-center text-center group">
+                <div className="font-black text-[#1B3A6B] mb-4 group-hover:scale-110 transition-transform duration-300" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "3rem" }}>{item.stat}</div>
+                <div className="text-lg font-medium text-slate-800 mb-4">{item.label}</div>
+                <div className="text-sm font-semibold text-[#C9A84C] flex items-center gap-1 group-hover:text-[#D4B663] transition-colors">
+                  Why this matters <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="py-32 px-6 bg-[#1B3A6B] relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-white blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#C9A84C] blur-3xl"></div>
+        </div>
+        <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
+          <h2 className="text-4xl font-bold text-white mb-6 leading-tight" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "clamp(2rem, 4vw, 3rem)" }}>
+            Your LLC deserves a real foundation.
+          </h2>
+          <p className="text-xl text-blue-100 mb-12 max-w-2xl">
+            Join thousands of business owners who are getting structured, getting funded, and getting contracts.
+          </p>
+          <button
+            onClick={onSignUp}
+            className="group w-full max-w-[600px] bg-[#C9A84C] hover:bg-[#D4B663] text-[#1B3A6B] text-xl font-bold rounded-xl transition-all hover:shadow-[0_0_40px_rgba(201,168,76,0.4)] flex items-center justify-center gap-3 transform hover:-translate-y-1"
+            style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 64 }}
+          >
+            Sign up free
+            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+          </button>
+          <div className="mt-6 font-medium text-blue-200 flex items-center justify-center gap-3">
+            <span>No credit card required</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A84C]"></span>
+            <span>Free forever plan</span>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-12 px-6 bg-slate-900 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+            <FoundedRightLogo variant="sidebar" height={28} />
+          </div>
+          <div className="text-slate-400 text-sm flex items-center gap-4">
+            <button className="hover:text-white transition-colors" onClick={() => {}}>Privacy Policy</button>
+            <button className="hover:text-white transition-colors" onClick={() => {}}>Terms of Service</button>
+            <button className="hover:text-white transition-colors" onClick={() => {}}>Contact</button>
+            <span>© {new Date().getFullYear()} FoundedRight. All rights reserved.</span>
+          </div>
+        </div>
+      </footer>
+
+    </div>
   );
 }
 
