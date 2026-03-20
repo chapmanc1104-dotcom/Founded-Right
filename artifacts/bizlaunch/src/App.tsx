@@ -403,6 +403,7 @@ function Dashboard() {
   const [naicsQuery, setNaicsQuery] = useState("");
   const [naicsResults, setNaicsResults] = useState<{ code: string; title: string; description: string; relevance: string; govContractTip: string }[]>([]);
   const [naicsLoading, setNaicsLoading] = useState(false);
+  const [naicsSearched, setNaicsSearched] = useState(false);
   const [naicsError, setNaicsError] = useState("");
   const [liveGrants, setLiveGrants] = useState<Record<string, unknown>[]>([]);
   const [grantsLoading, setGrantsLoading] = useState(false);
@@ -532,15 +533,20 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
 
   async function searchNaics() {
     if (!naicsQuery.trim() || naicsLoading) return;
-    setNaicsLoading(true); setNaicsError("");
+    setNaicsLoading(true); setNaicsError(""); setNaicsSearched(false);
     try {
       const r = await fetch(`${API}/ai/naics`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: naicsQuery, industry: profile.industry }),
       });
-      if (r.ok) { const { codes } = await r.json(); setNaicsResults(codes); }
-      else setNaicsError("Could not fetch NAICS codes. Please try again.");
+      if (r.ok) {
+        const { codes } = await r.json();
+        setNaicsResults(Array.isArray(codes) ? codes : []);
+        setNaicsSearched(true);
+      } else {
+        setNaicsError("Could not fetch NAICS codes. Please try again.");
+      }
     } catch { setNaicsError("Could not fetch NAICS codes. Please try again."); }
     setNaicsLoading(false);
   }
@@ -553,7 +559,17 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profile }),
       });
-      if (r.ok) { const { grants } = await r.json(); setLiveGrants(grants); setGrantsFetched(true); }
+      if (r.ok) {
+        const { grants } = await r.json();
+        const normalized = (Array.isArray(grants) ? grants : []).map((g: Record<string, unknown>) => ({
+          ...g,
+          type: g.type === "contract" ? "Gov Contract" : g.type,
+          match: g.match ?? g.matchScore ?? 0,
+          requirements: (g.requirements ?? g.requiredSteps ?? []) as string[],
+        }));
+        setLiveGrants(normalized);
+        setGrantsFetched(true);
+      }
     } catch { /* ignore */ }
     setGrantsLoading(false);
   }
@@ -1010,8 +1026,11 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                 {naicsResults.length === 0 && !naicsLoading && (
                   <div style={{ textAlign: "center", padding: "40px 20px", color: "#555", fontSize: 13 }}>
                     <div style={{ fontSize: 28, marginBottom: 12 }}>⌖</div>
-                    Describe your business above and the AI will suggest the best NAICS codes for you.
-                    <div style={{ marginTop: 8, fontSize: 11 }}>Getting the right codes is critical — wrong codes can disqualify you from contracts and grants.</div>
+                    {naicsSearched
+                      ? "No NAICS codes found for that description. Try rephrasing with more detail about your products or services."
+                      : "Describe your business above and the AI will suggest the best NAICS codes for you."
+                    }
+                    {!naicsSearched && <div style={{ marginTop: 8, fontSize: 11 }}>Getting the right codes is critical — wrong codes can disqualify you from contracts and grants.</div>}
                   </div>
                 )}
               </>
@@ -1050,11 +1069,19 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                         {grantsLoading ? "Refreshing…" : "↻ Refresh"}
                       </button>
                     </div>
+                    {liveGrants.filter((g) => liveGrantFilter === "all" || g.type === liveGrantFilter).length === 0 && (
+                      <div style={{ textAlign: "center", padding: "40px 20px", color: "#555", fontSize: 13 }}>
+                        <div style={{ fontSize: 28, marginBottom: 12 }}>◎</div>
+                        {liveGrants.length === 0
+                          ? "No funding matches found for your current profile. Try updating your certifications or industry in your profile."
+                          : `No ${liveGrantFilter} opportunities match your current filters.`}
+                      </div>
+                    )}
                     {liveGrants
                       .filter((g) => liveGrantFilter === "all" || g.type === liveGrantFilter)
-                      .sort((a, b) => Number(b.matchScore ?? b.match ?? 0) - Number(a.matchScore ?? a.match ?? 0))
+                      .sort((a, b) => Number(b.match ?? 0) - Number(a.match ?? 0))
                       .map((g, idx) => {
-                        const matchScore = Number(g.matchScore ?? g.match ?? 0);
+                        const matchScore = Number(g.match ?? 0);
                         const typeColors: Record<string, { bg: string; color: string }> = {
                           "Grant": { bg: "#1D9E7520", color: "#1D9E75" },
                           "Loan": { bg: "#185FA520", color: "#378ADD" },
@@ -1062,6 +1089,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                           "Tax Credit": { bg: "#BA751720", color: "#EF9F27" },
                         };
                         const tc = typeColors[g.type as string] ?? { bg: "#33333a", color: "#777" };
+                        const reqs = Array.isArray(g.requirements) ? g.requirements as string[] : [];
                         return (
                           <div key={idx} className="fund-card">
                             <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
@@ -1073,12 +1101,12 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                                 </div>
                                 <div className="fund-meta">{String(g.agency)} · {String(g.deadline)}</div>
                                 <div className="fund-amt">{String(g.amount)}</div>
-                                {g.matchReason && <div style={{ fontSize: 11, color: "#666", marginTop: 6 }}>{String(g.matchReason)}</div>}
-                                {Array.isArray(g.requiredSteps) && g.requiredSteps.length > 0 && (
+                                {g.description && <div style={{ fontSize: 12, color: "#888", marginTop: 6 }}>{String(g.description)}</div>}
+                                {reqs.length > 0 && (
                                   <div style={{ marginTop: 8 }}>
                                     <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>Key requirements:</div>
                                     <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                      {(g.requiredSteps as string[]).map((step, si) => (
+                                      {reqs.map((step, si) => (
                                         <span key={si} style={{ fontSize: 10, background: "#1e1e22", color: "#666", padding: "2px 8px", borderRadius: 99 }}>{step}</span>
                                       ))}
                                     </div>

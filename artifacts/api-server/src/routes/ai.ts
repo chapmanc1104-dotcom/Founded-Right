@@ -5,6 +5,22 @@ const router: IRouter = Router();
 
 const MODEL = "claude-haiku-4-5";
 
+function extractJson(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) return fenced[1].trim();
+  const firstBracket = text.indexOf("[");
+  const firstBrace = text.indexOf("{");
+  if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+    const last = text.lastIndexOf("]");
+    if (last !== -1) return text.slice(firstBracket, last + 1);
+  }
+  if (firstBrace !== -1) {
+    const last = text.lastIndexOf("}");
+    if (last !== -1) return text.slice(firstBrace, last + 1);
+  }
+  return text.trim();
+}
+
 router.post("/ai/chat", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -56,14 +72,14 @@ router.post("/ai/naics", async (req: Request, res: Response) => {
   try {
     const prompt = `A small business owner describes their business as: "${query}". Industry: ${industry || "not specified"}.
 
-Return exactly 5 NAICS code suggestions as a JSON array. Each object must have:
-- code: 6-digit NAICS code (string)
-- title: official NAICS title
-- description: 1-2 sentence description of what this code covers
-- relevance: "primary", "secondary", or "related"
-- govContractTip: one specific tip about using this code to win government contracts
+Return exactly 5 NAICS code suggestions as a raw JSON array (no markdown, no code fences). Each object must have exactly these fields:
+- "code": 6-digit NAICS code as a string (e.g. "541512")
+- "title": official NAICS title string
+- "description": 1-2 sentence description of what this code covers
+- "relevance": exactly one of "primary", "secondary", or "related"
+- "govContractTip": one specific tip about using this code to win government contracts
 
-Return only valid JSON array, no markdown, no explanation.`;
+Output ONLY the JSON array, starting with [ and ending with ]. No explanation, no markdown.`;
 
     const response = await anthropic.messages.create({
       model: MODEL,
@@ -74,11 +90,11 @@ Return only valid JSON array, no markdown, no explanation.`;
     const text = response.content[0].type === "text" ? response.content[0].text : "[]";
     let codes;
     try {
-      codes = JSON.parse(text.trim());
+      codes = JSON.parse(extractJson(text));
     } catch {
       codes = [];
     }
-    res.json({ codes });
+    res.json({ codes: Array.isArray(codes) ? codes : [] });
   } catch (err: unknown) {
     req.log.error({ err }, "NAICS AI error");
     res.status(500).json({ error: "AI service unavailable" });
@@ -103,27 +119,29 @@ router.post("/ai/grants", async (req: Request, res: Response) => {
 - Industry: ${profile.industry || "not specified"}
 - State: ${profile.state || "MD"}
 - Entity: ${profile.entityType || "LLC"}
-- Years: ${profile.yearsInBusiness || "0"}
+- Years in business: ${profile.yearsInBusiness || "0"}
 - Employees: ${profile.employees || "1"}
-- Revenue: $${profile.annualRevenue || "0"}K
+- Annual revenue: $${profile.annualRevenue || "0"}K
 - Certifications: ${(profile.certifications || []).join(", ") || "none"}
-- Goals: ${(profile.fundingGoals || []).join(", ") || "not specified"}
-- Target amount: ${profile.fundingAmount || "not specified"}
+- Funding goals: ${(profile.fundingGoals || []).join(", ") || "not specified"}
+- Target funding amount: ${profile.fundingAmount || "not specified"}
 
-Return 8 real funding opportunities as a JSON array. Each object must have:
-- id: unique string id
-- title: program name
-- type: "grant", "loan", or "contract"
-- amount: dollar range (e.g. "Up to $250,000")
-- deadline: deadline or "Rolling" or "Quarterly"
-- match: 0-100 match score based on their profile
-- description: 1-2 sentences about the program
-- requirements: array of 3-4 key eligibility strings
-- applyUrl: the real application URL
-- agency: administering agency name
-- tags: array of relevant tags like ["woman-owned", "federal", "sbir"]
+Return exactly 8 real funding opportunities as a raw JSON array (no markdown, no code fences). Each object must have exactly these fields:
+- "id": unique string id (e.g. "opp-1")
+- "title": program name
+- "type": exactly one of "Grant", "Loan", or "contract"
+- "amount": dollar range string (e.g. "Up to $250,000")
+- "deadline": deadline string or "Rolling" or "Quarterly"
+- "match": integer 0-100 representing match score based on their profile
+- "description": 1-2 sentences about the program
+- "requirements": array of 3-4 key eligibility strings
+- "applyUrl": real application URL string
+- "agency": administering agency name string
+- "tags": array of tag strings like ["woman-owned", "federal", "sbir"]
 
-Focus on real federal and state programs. Include SBIR/STTR if tech-related, SBA loans, state grants, and set-aside contracts. Return only valid JSON array.`;
+Focus on real, currently active federal and state programs. Include SBA loans, SBIR/STTR if tech-related, state-level grants, and federal set-aside contracts. Higher match scores for programs that fit their certifications and industry.
+
+Output ONLY the JSON array, starting with [ and ending with ]. No explanation, no markdown.`;
 
     const response = await anthropic.messages.create({
       model: MODEL,
@@ -134,11 +152,11 @@ Focus on real federal and state programs. Include SBIR/STTR if tech-related, SBA
     const text = response.content[0].type === "text" ? response.content[0].text : "[]";
     let grants;
     try {
-      grants = JSON.parse(text.trim());
+      grants = JSON.parse(extractJson(text));
     } catch {
       grants = [];
     }
-    res.json({ grants });
+    res.json({ grants: Array.isArray(grants) ? grants : [] });
   } catch (err: unknown) {
     req.log.error({ err }, "Grants AI error");
     res.status(500).json({ error: "AI service unavailable" });
