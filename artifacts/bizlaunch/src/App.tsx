@@ -191,6 +191,37 @@ const defaultProfile: Profile = {
   naicsCodes: [],
 };
 
+function FoundedRightLogo({ variant = "full", height: h = 28 }: { variant?: "full" | "sidebar" | "icon"; height?: number }) {
+  const S = 11, G = 2.5;
+  const navy = variant === "sidebar" ? "#FFFFFF" : "#1B3A6B";
+  const gold = "#C9A84C";
+  const blocks = [
+    { x: 0,           y: S + G, fill: navy },
+    { x: S + G,       y: S + G, fill: gold },
+    { x: S + G,       y: 0,     fill: navy },
+    { x: 2 * (S + G), y: 0,     fill: gold },
+  ];
+  if (variant === "icon") {
+    const bw = 3 * S + 2 * G;
+    const bh = 2 * S + G;
+    return (
+      <svg height={h} viewBox={`0 0 ${bw} ${bh}`} fill="none" style={{ display: "block" }}>
+        {blocks.map((b, i) => <rect key={i} x={b.x} y={b.y} width={S} height={S} rx={1.5} fill={b.fill} />)}
+      </svg>
+    );
+  }
+  const divColor = variant === "sidebar" ? "rgba(255,255,255,0.22)" : "#CBD5E1";
+  const wordFounded = navy;
+  return (
+    <svg height={h} viewBox="0 0 130 28" fill="none" style={{ display: "block", overflow: "visible" }}>
+      {blocks.map((b, i) => <rect key={i} x={b.x} y={b.y + 2} width={S} height={S} rx={1.5} fill={b.fill} />)}
+      <line x1="49" y1="4" x2="49" y2="24" stroke={divColor} strokeWidth="1" strokeLinecap="round"/>
+      <text x="60" y="11" fontFamily="'Plus Jakarta Sans',sans-serif" fontSize="11.5" fontWeight="700" fill={wordFounded}>Founded</text>
+      <text x="60" y="24" fontFamily="'Plus Jakarta Sans',sans-serif" fontSize="11.5" fontWeight="700" fill={gold}>Right</text>
+    </svg>
+  );
+}
+
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -202,8 +233,7 @@ input, textarea, select { font-family: inherit; outline: none; border: none; bac
 .app { display: flex; height: 100vh; overflow: hidden; }
 .sidebar { width: 230px; flex-shrink: 0; background: #1B3A6B; display: flex; flex-direction: column; }
 .brand { padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.brand-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-.brand-sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand-sub { font-size: 11px; color: rgba(255,255,255,0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-section { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.35); letter-spacing: 0.12em; text-transform: uppercase; padding: 16px 18px 6px; }
 .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 18px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.65); border-left: 2px solid transparent; transition: all 0.15s; }
 .nav-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
@@ -328,8 +358,6 @@ const landingCss = `
 .lp { background: #fff; color: #0F172A; font-family: 'Inter', sans-serif; min-height: 100vh; }
 .lp-nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #E2E8F0; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .lp-nav-logo { display: flex; align-items: center; gap: 9px; text-decoration: none; }
-.lp-nav-logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #1B3A6B; flex-shrink: 0; }
-.lp-nav-logo-text { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 700; color: #0F172A; }
 .lp-nav-actions { display: flex; align-items: center; gap: 20px; }
 .lp-nav-signin { font-size: 14px; color: #64748B; background: none; border: none; cursor: pointer; transition: color 0.15s; padding: 0; }
 .lp-nav-signin:hover { color: #1B3A6B; }
@@ -407,8 +435,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
         {/* Nav */}
         <nav className="lp-nav">
           <div className="lp-nav-logo">
-            <div className="lp-nav-logo-dot" />
-            <span className="lp-nav-logo-text">FoundedRight</span>
+            <FoundedRightLogo variant="full" height={30} />
           </div>
           <div className="lp-nav-actions">
             <button className="lp-nav-signin" onClick={onSignIn}>Sign in</button>
@@ -526,8 +553,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
         <footer style={{ borderTop: "1px solid #1a1a1e", padding: "32px 24px", background: "#F7F8FA" }}>
           <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
             <div className="lp-nav-logo">
-              <div className="lp-nav-logo-dot" />
-              <span className="lp-nav-logo-text" style={{ fontSize: 15 }}>FoundedRight</span>
+              <FoundedRightLogo variant="full" height={26} />
             </div>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <button className="lp-footer-link" onClick={() => {}}>Privacy Policy</button>
@@ -632,7 +658,7 @@ export default function App() {
         <style>{css}</style>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#F7F8FA" }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 22, fontWeight: 700, color: "#1B3A6B", marginBottom: 12 }}>FoundedRight</div>
+            <div style={{ marginBottom: 12, display: "flex", justifyContent: "center" }}><FoundedRightLogo variant="full" height={30} /></div>
             <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
               <div className="dot" /><div className="dot" style={{ animationDelay: "0.15s" }} /><div className="dot" style={{ animationDelay: "0.3s" }} />
             </div>
@@ -736,9 +762,8 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
 
   const brand = (
     <div style={{ textAlign: "center", marginBottom: 28 }}>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1B3A6B" }} />
-        <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 20, fontWeight: 700, color: "#0F172A" }}>FoundedRight</span>
+      <div style={{ display: "inline-flex", marginBottom: 6 }}>
+        <FoundedRightLogo variant="full" height={30} />
       </div>
     </div>
   );
@@ -858,9 +883,8 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
       <div style={{ minHeight: "100vh", background: "#F7F8FA", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
         <div style={{ width: "100%", maxWidth: 400 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1B3A6B" }} />
-              <span style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 20, fontWeight: 700, color: "#0F172A" }}>FoundedRight</span>
+            <div style={{ display: "inline-flex" }}>
+              <FoundedRightLogo variant="full" height={30} />
             </div>
           </div>
           <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: "32px 28px", boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}>
@@ -1322,8 +1346,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
       <div className="app">
         <div className="sidebar">
           <div className="brand">
-            <div className="brand-name">Founded Right</div>
-            <div className="brand-sub">{profile.businessName || "Business setup platform"}</div>
+            <FoundedRightLogo variant="sidebar" height={30} />
+            <div className="brand-sub" style={{ marginTop: 6 }}>{profile.businessName || "Business setup platform"}</div>
           </div>
           <div style={{ flex: 1, overflowY: "auto" }}>
             {navItems.map(n => {
