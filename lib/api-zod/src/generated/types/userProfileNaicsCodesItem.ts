@@ -6,11 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Resource {
-  id: string;
+export type UserProfileNaicsCodesItem = {
+  code: string;
   title: string;
-  description: string;
-  category: string;
-  url?: string;
-  icon?: string;
-}
+  relevance: string;
+};

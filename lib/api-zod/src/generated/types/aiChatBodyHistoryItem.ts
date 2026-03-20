@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ChecklistItem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  order: number;
-}
+export type AiChatBodyHistoryItem = {
+  role: string;
+  content: string;
+};

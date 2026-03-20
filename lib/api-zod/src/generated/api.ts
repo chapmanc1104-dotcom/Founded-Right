@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -16,28 +15,189 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
- * Returns a list of curated business launch resources
- * @summary List business resources
+ * @summary Get current user
  */
-export const ListResourcesResponseItem = zod.object({
-  id: zod.string(),
-  title: zod.string(),
-  description: zod.string(),
-  category: zod.string(),
-  url: zod.string().optional(),
-  icon: zod.string().optional(),
+export const GetCurrentAuthUserResponse = zod.object({
+  isAuthenticated: zod.boolean(),
+  user: zod
+    .object({
+      id: zod.string().optional(),
+      name: zod.string().optional(),
+      profileImage: zod.string().optional(),
+    })
+    .nullish(),
 });
-export const ListResourcesResponse = zod.array(ListResourcesResponseItem);
 
 /**
- * Returns a business launch checklist
- * @summary Get launch checklist
+ * @summary Redirect to Replit OIDC login
  */
-export const GetChecklistResponseItem = zod.object({
-  id: zod.string(),
-  title: zod.string(),
-  description: zod.string(),
-  category: zod.string(),
-  order: zod.number(),
+export const LoginQueryParams = zod.object({
+  returnTo: zod.coerce.string().optional(),
 });
-export const GetChecklistResponse = zod.array(GetChecklistResponseItem);
+
+/**
+ * @summary Get user profile
+ */
+export const GetProfileResponse = zod.object({
+  id: zod.string(),
+  businessName: zod.string().optional(),
+  onboarded: zod.boolean(),
+  entityType: zod.string().optional(),
+  state: zod.string().optional(),
+  industry: zod.string().optional(),
+  stage: zod.string().optional(),
+  ownerName: zod.string().optional(),
+  contactEmail: zod.string().optional(),
+  contactPhone: zod.string().optional(),
+  zipCode: zod.string().optional(),
+  yearsInBusiness: zod.string().optional(),
+  employees: zod.string().optional(),
+  annualRevenue: zod.string().optional(),
+  fundingGoals: zod.array(zod.string()).optional(),
+  missionStatement: zod.string().optional(),
+  certifications: zod.array(zod.string()).optional(),
+  fundingAmount: zod.string().optional(),
+  demographics: zod.array(zod.string()).optional(),
+  naicsCodes: zod
+    .array(
+      zod.object({
+        code: zod.string(),
+        title: zod.string(),
+        relevance: zod.string(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * @summary Update user profile
+ */
+export const UpdateProfileBody = zod.object({
+  businessName: zod.string().optional(),
+  onboarded: zod.boolean().optional(),
+  entityType: zod.string().optional(),
+  state: zod.string().optional(),
+  industry: zod.string().optional(),
+  ownerName: zod.string().optional(),
+  contactEmail: zod.string().optional(),
+  contactPhone: zod.string().optional(),
+  zipCode: zod.string().optional(),
+  yearsInBusiness: zod.string().optional(),
+  employees: zod.string().optional(),
+  annualRevenue: zod.string().optional(),
+  fundingGoals: zod.array(zod.string()).optional(),
+  missionStatement: zod.string().optional(),
+  certifications: zod.array(zod.string()).optional(),
+  fundingAmount: zod.string().optional(),
+  naicsCodes: zod
+    .array(
+      zod.object({
+        code: zod.string(),
+        title: zod.string(),
+        relevance: zod.string(),
+      }),
+    )
+    .optional(),
+});
+
+export const UpdateProfileResponse = zod.object({
+  id: zod.string(),
+  businessName: zod.string().optional(),
+  onboarded: zod.boolean(),
+  entityType: zod.string().optional(),
+  state: zod.string().optional(),
+  industry: zod.string().optional(),
+  stage: zod.string().optional(),
+  ownerName: zod.string().optional(),
+  contactEmail: zod.string().optional(),
+  contactPhone: zod.string().optional(),
+  zipCode: zod.string().optional(),
+  yearsInBusiness: zod.string().optional(),
+  employees: zod.string().optional(),
+  annualRevenue: zod.string().optional(),
+  fundingGoals: zod.array(zod.string()).optional(),
+  missionStatement: zod.string().optional(),
+  certifications: zod.array(zod.string()).optional(),
+  fundingAmount: zod.string().optional(),
+  demographics: zod.array(zod.string()).optional(),
+  naicsCodes: zod
+    .array(
+      zod.object({
+        code: zod.string(),
+        title: zod.string(),
+        relevance: zod.string(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * @summary Get checklist completion state
+ */
+export const GetChecklistStateResponse = zod.record(
+  zod.string(),
+  zod.boolean(),
+);
+
+/**
+ * @summary Toggle a checklist item
+ */
+export const UpdateChecklistStateBody = zod.object({
+  itemId: zod.string(),
+  completed: zod.boolean(),
+});
+
+export const UpdateChecklistStateResponse = zod.record(
+  zod.string(),
+  zod.boolean(),
+);
+
+/**
+ * @summary Send message to AI assistant
+ */
+export const AiChatBody = zod.object({
+  message: zod.string(),
+  history: zod
+    .array(
+      zod.object({
+        role: zod.string(),
+        content: zod.string(),
+      }),
+    )
+    .optional(),
+});
+
+export const AiChatResponse = zod.object({
+  reply: zod.string(),
+});
+
+/**
+ * @summary Find NAICS codes using AI
+ */
+export const AiNaicsBody = zod.object({
+  query: zod.string(),
+  industry: zod.string().optional(),
+});
+
+export const AiNaicsResponse = zod.object({
+  codes: zod.array(
+    zod.object({
+      code: zod.string(),
+      title: zod.string(),
+      description: zod.string(),
+      relevance: zod.string(),
+      govContractTip: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Find funding opportunities using AI
+ */
+export const AiFindGrantsBody = zod.object({
+  profile: zod.record(zod.string(), zod.unknown()),
+});
+
+export const AiFindGrantsResponse = zod.object({
+  grants: zod.array(zod.record(zod.string(), zod.unknown())),
+});

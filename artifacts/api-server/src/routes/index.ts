@@ -1,12 +1,14 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import resourcesRouter from "./resources";
-import checklistRouter from "./checklist";
+import authRouter from "./auth";
+import profileRouter from "./profile";
+import aiRouter from "./ai";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(resourcesRouter);
-router.use(checklistRouter);
+router.use(authRouter);
+router.use(profileRouter);
+router.use(aiRouter);
 
 export default router;

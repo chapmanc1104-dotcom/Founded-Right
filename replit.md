@@ -92,6 +92,26 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `lib/replit-auth-web` (`@workspace/replit-auth-web`)
+
+React hook (`useAuth`) for Replit OIDC auth on the web. Exports `useAuth()` which calls `/api/auth/user` and provides `isLoading`, `isAuthenticated`, `user`, `login`, `logout`.
+
+### `artifacts/bizlaunch` (`@workspace/bizlaunch`)
+
+BizLaunch — a comprehensive business launch platform. Single-page React + Vite app with 8 screens:
+- **Dashboard**: Score ring SVG, category progress bars, funding matches
+- **Checklist**: 46 items across 8 categories (Legal, Banking, Credit, Federal, Certs, Grants, Presence, Loans) with filter and accordion
+- **Documents**: Document vault linked to checklist state
+- **Presence**: Professional presence tracker
+- **Opportunities**: Static funding database (8 programs) with readiness tracking
+- **Calendar**: Deadline calendar with event list
+- **NAICS Finder**: AI-powered NAICS code search via `/api/ai/naics`
+- **Live Grants**: AI-matched funding via `/api/ai/grants`
+- **AI Assistant**: Chat with Claude claude-3-5-haiku personalized to user's profile
+
+Auth: `@workspace/replit-auth-web` → `useAuth()` → redirects to `/api/login`
+Profile + checklist state persisted to PostgreSQL via `/api/profile` and `/api/checklist-state`
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

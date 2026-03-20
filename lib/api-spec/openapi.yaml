@@ -9,15 +9,16 @@ servers:
 tags:
   - name: health
     description: Health operations
-  - name: resources
-    description: Business resources
+  - name: auth
+    description: Authentication operations
+  - name: profile
+    description: User profile and business data
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -25,36 +26,168 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-  /resources:
+  /auth/user:
     get:
-      operationId: listResources
-      tags: [resources]
-      summary: List business resources
-      description: Returns a list of curated business launch resources
+      operationId: getCurrentAuthUser
+      tags: [auth]
+      summary: Get current user
       responses:
         "200":
-          description: List of resources
+          description: Current auth state
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Resource"
-  /checklist:
+                $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+  /login:
     get:
-      operationId: getChecklist
-      tags: [resources]
-      summary: Get launch checklist
-      description: Returns a business launch checklist
+      operationId: login
+      tags: [auth]
+      summary: Redirect to Replit OIDC login
+      parameters:
+        - name: returnTo
+          in: query
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect
+  /callback:
+    get:
+      operationId: authCallback
+      tags: [auth]
+      summary: OIDC callback
+      responses:
+        "302":
+          description: Redirect
+  /logout:
+    get:
+      operationId: logout
+      tags: [auth]
+      summary: Log out
+      responses:
+        "302":
+          description: Redirect
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get user profile
       responses:
         "200":
-          description: Checklist items
+          description: Profile
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ChecklistItem"
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update user profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+  /checklist-state:
+    get:
+      operationId: getChecklistState
+      tags: [profile]
+      summary: Get checklist completion state
+      responses:
+        "200":
+          description: Checklist state map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistState"
+        "401":
+          description: Unauthorized
+    put:
+      operationId: updateChecklistState
+      tags: [profile]
+      summary: Toggle a checklist item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateChecklistBody"
+      responses:
+        "200":
+          description: Updated checklist state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistState"
+        "401":
+          description: Unauthorized
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [profile]
+      summary: Send message to AI assistant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatBody"
+      responses:
+        "200":
+          description: AI reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiChatResponse"
+        "401":
+          description: Unauthorized
+  /ai/naics:
+    post:
+      operationId: aiNaics
+      tags: [profile]
+      summary: Find NAICS codes using AI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiNaicsBody"
+      responses:
+        "200":
+          description: NAICS suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNaicsResponse"
+        "401":
+          description: Unauthorized
+  /ai/grants:
+    post:
+      operationId: aiFindGrants
+      tags: [profile]
+      summary: Find funding opportunities using AI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiGrantsBody"
+      responses:
+        "200":
+          description: Grant matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiGrantsResponse"
+        "401":
+          description: Unauthorized
 components:
   schemas:
     HealthStatus:
@@ -62,44 +195,209 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
-    Resource:
+      required: [status]
+    GetCurrentAuthUserResponse:
+      type: object
+      properties:
+        isAuthenticated:
+          type: boolean
+        user:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            profileImage:
+              type: string
+      required: [isAuthenticated]
+    UserProfile:
       type: object
       properties:
         id:
           type: string
-        title:
+        businessName:
           type: string
-        description:
+        onboarded:
+          type: boolean
+        entityType:
           type: string
-        category:
+        state:
           type: string
-        url:
+        industry:
           type: string
-        icon:
+        stage:
           type: string
-      required:
-        - id
-        - title
-        - description
-        - category
-    ChecklistItem:
+        ownerName:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        zipCode:
+          type: string
+        yearsInBusiness:
+          type: string
+        employees:
+          type: string
+        annualRevenue:
+          type: string
+        fundingGoals:
+          type: array
+          items:
+            type: string
+        missionStatement:
+          type: string
+        certifications:
+          type: array
+          items:
+            type: string
+        fundingAmount:
+          type: string
+        demographics:
+          type: array
+          items:
+            type: string
+        naicsCodes:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              title:
+                type: string
+              relevance:
+                type: string
+            required: [code, title, relevance]
+      required: [id, onboarded]
+    UpdateProfileBody:
       type: object
       properties:
-        id:
+        businessName:
           type: string
-        title:
+        onboarded:
+          type: boolean
+        entityType:
           type: string
-        description:
+        state:
           type: string
-        category:
+        industry:
           type: string
-        order:
-          type: integer
-      required:
-        - id
-        - title
-        - description
-        - category
-        - order
+        ownerName:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        zipCode:
+          type: string
+        yearsInBusiness:
+          type: string
+        employees:
+          type: string
+        annualRevenue:
+          type: string
+        fundingGoals:
+          type: array
+          items:
+            type: string
+        missionStatement:
+          type: string
+        certifications:
+          type: array
+          items:
+            type: string
+        fundingAmount:
+          type: string
+        naicsCodes:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              title:
+                type: string
+              relevance:
+                type: string
+            required: [code, title, relevance]
+    ChecklistState:
+      type: object
+      additionalProperties:
+        type: boolean
+    UpdateChecklistBody:
+      type: object
+      properties:
+        itemId:
+          type: string
+        completed:
+          type: boolean
+      required: [itemId, completed]
+    AiChatBody:
+      type: object
+      properties:
+        message:
+          type: string
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+              content:
+                type: string
+            required: [role, content]
+      required: [message]
+    AiChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+      required: [reply]
+    AiNaicsBody:
+      type: object
+      properties:
+        query:
+          type: string
+        industry:
+          type: string
+      required: [query]
+    AiNaicsResponse:
+      type: object
+      properties:
+        codes:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              title:
+                type: string
+              description:
+                type: string
+              relevance:
+                type: string
+              govContractTip:
+                type: string
+            required: [code, title, description, relevance, govContractTip]
+      required: [codes]
+    AiGrantsBody:
+      type: object
+      properties:
+        profile:
+          type: object
+          additionalProperties: true
+      required: [profile]
+    AiGrantsResponse:
+      type: object
+      properties:
+        grants:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required: [grants]

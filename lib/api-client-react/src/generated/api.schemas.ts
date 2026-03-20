@@ -9,19 +9,124 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  url?: string;
-  icon?: string;
+export type GetCurrentAuthUserResponseUser = {
+  id?: string;
+  name?: string;
+  profileImage?: string;
+} | null;
+
+export interface GetCurrentAuthUserResponse {
+  isAuthenticated: boolean;
+  user?: GetCurrentAuthUserResponseUser;
 }
 
-export interface ChecklistItem {
+export type UserProfileNaicsCodesItem = {
+  code: string;
+  title: string;
+  relevance: string;
+};
+
+export interface UserProfile {
   id: string;
+  businessName?: string;
+  onboarded: boolean;
+  entityType?: string;
+  state?: string;
+  industry?: string;
+  stage?: string;
+  ownerName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  zipCode?: string;
+  yearsInBusiness?: string;
+  employees?: string;
+  annualRevenue?: string;
+  fundingGoals?: string[];
+  missionStatement?: string;
+  certifications?: string[];
+  fundingAmount?: string;
+  demographics?: string[];
+  naicsCodes?: UserProfileNaicsCodesItem[];
+}
+
+export type UpdateProfileBodyNaicsCodesItem = {
+  code: string;
+  title: string;
+  relevance: string;
+};
+
+export interface UpdateProfileBody {
+  businessName?: string;
+  onboarded?: boolean;
+  entityType?: string;
+  state?: string;
+  industry?: string;
+  ownerName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  zipCode?: string;
+  yearsInBusiness?: string;
+  employees?: string;
+  annualRevenue?: string;
+  fundingGoals?: string[];
+  missionStatement?: string;
+  certifications?: string[];
+  fundingAmount?: string;
+  naicsCodes?: UpdateProfileBodyNaicsCodesItem[];
+}
+
+export interface ChecklistState {
+  [key: string]: boolean;
+}
+
+export interface UpdateChecklistBody {
+  itemId: string;
+  completed: boolean;
+}
+
+export type AiChatBodyHistoryItem = {
+  role: string;
+  content: string;
+};
+
+export interface AiChatBody {
+  message: string;
+  history?: AiChatBodyHistoryItem[];
+}
+
+export interface AiChatResponse {
+  reply: string;
+}
+
+export interface AiNaicsBody {
+  query: string;
+  industry?: string;
+}
+
+export type AiNaicsResponseCodesItem = {
+  code: string;
   title: string;
   description: string;
-  category: string;
-  order: number;
+  relevance: string;
+  govContractTip: string;
+};
+
+export interface AiNaicsResponse {
+  codes: AiNaicsResponseCodesItem[];
 }
+
+export type AiGrantsBodyProfile = { [key: string]: unknown };
+
+export interface AiGrantsBody {
+  profile: AiGrantsBodyProfile;
+}
+
+export type AiGrantsResponseGrantsItem = { [key: string]: unknown };
+
+export interface AiGrantsResponse {
+  grants: AiGrantsResponseGrantsItem[];
+}
+
+export type LoginParams = {
+  returnTo?: string;
+};
