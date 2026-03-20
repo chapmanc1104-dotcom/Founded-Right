@@ -1,0 +1,17 @@
+packages:
+  "framer-motion": "Required for stunning page transitions, micro-interactions, and scroll reveals"
+  "lucide-react": "For beautiful consistent iconography"
+  "clsx": "For conditional class merging"
+  "tailwind-merge": "For merging tailwind classes in components"
+
+images:
+  - path: "artifacts/bizlaunch/public/images/hero-illustration.png"
+    description: "3D abstract illustration of a sleek modern rocket launching from a digital platform, vibrant startup style, deep indigo and bright coral colors, clean transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/bizlaunch/public/images/feature-bg.png"
+    description: "Abstract gradient mesh background in deep indigo, vibrant teal and soft coral accents, frosted glass texture, premium modern look"
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated API hooks from @workspace/api-client-react for data fetching
+  - Checklist progress is persisted locally since there is no mutation endpoint for completion status

@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BizLaunch API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: resources
+    description: Business resources
 paths:
   /healthz:
     get:
@@ -24,6 +25,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /resources:
+    get:
+      operationId: listResources
+      tags: [resources]
+      summary: List business resources
+      description: Returns a list of curated business launch resources
+      responses:
+        "200":
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
+  /checklist:
+    get:
+      operationId: getChecklist
+      tags: [resources]
+      summary: Get launch checklist
+      description: Returns a business launch checklist
+      responses:
+        "200":
+          description: Checklist items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistItem"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +64,42 @@ components:
           type: string
       required:
         - status
-
+    Resource:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        url:
+          type: string
+        icon:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - category
+    ChecklistItem:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        order:
+          type: integer
+      required:
+        - id
+        - title
+        - description
+        - category
+        - order
