@@ -163,4 +163,67 @@ Output ONLY the JSON array, starting with [ and ending with ]. No explanation, n
   }
 });
 
+router.post("/ai/capabilitystatement", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const { profile } = req.body;
+  if (!profile) { res.status(400).json({ error: "Missing profile" }); return; }
+
+  try {
+    const naicsLines = (profile.naicsCodes || []).map((n: { code: string; title: string }) => `${n.code} – ${n.title}`).join(", ") || "Not specified";
+    const certLines = (profile.certifications || []).join(", ") || "None";
+
+    const prompt = `Generate a professional government contracting capability statement for the following business. Return ONLY a valid JSON object (no markdown, no code fences).
+
+Business Profile:
+- Company: ${profile.businessName || "Company Name"}
+- Owner: ${profile.ownerName || ""}
+- Industry: ${profile.industry || "Not specified"}
+- Entity type: ${profile.entityType || "LLC"}
+- State: ${profile.state || ""}
+- Years in business: ${profile.yearsInBusiness || "0"}
+- Employees: ${profile.employees || "1"}
+- Annual revenue: $${profile.annualRevenue || "0"}K
+- Mission: ${profile.missionStatement || ""}
+- NAICS Codes: ${naicsLines}
+- Certifications: ${certLines}
+- Email: ${profile.contactEmail || ""}
+- Phone: ${profile.contactPhone || ""}
+
+Return a JSON object with exactly these fields:
+{
+  "companyOverview": "2-3 sentence professional overview positioning the company for government contracting",
+  "coreCompetencies": ["competency 1", "competency 2", "competency 3", "competency 4", "competency 5"],
+  "differentiators": ["differentiator 1", "differentiator 2", "differentiator 3"],
+  "pastPerformance": "1-2 sentences about past performance, or a placeholder if unknown",
+  "naicsCodes": "${naicsLines}",
+  "certifications": "${certLines}",
+  "contactName": "${profile.ownerName || profile.businessName || ""}",
+  "contactEmail": "${profile.contactEmail || ""}",
+  "contactPhone": "${profile.contactPhone || ""}",
+  "contactLocation": "${profile.state || ""}"
+}
+
+Make the language professional, concise, and optimized for government procurement officers. Output ONLY the JSON object.`;
+
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const text = response.content[0].type === "text" ? response.content[0].text : "{}";
+    let statement;
+    try {
+      statement = JSON.parse(extractJson(text));
+    } catch {
+      statement = {};
+    }
+    res.json({ statement });
+  } catch (err: unknown) {
+    req.log.error({ err }, "Capability statement AI error");
+    res.status(500).json({ error: "AI service unavailable" });
+  }
+});
+
 export default router;

@@ -300,6 +300,26 @@ input, textarea, select { font-family: inherit; outline: none; border: none; bac
 .reset-btn { font-size: 11px; color: #444; background: none; padding: 8px 12px; border-radius: 6px; border: 1px solid #222; }
 .reset-btn:hover { color: #777; border-color: #333; }
 .landing { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0a0a0c; padding: 40px 20px; }
+@media print {
+  body * { visibility: hidden !important; }
+  #cap-statement-print, #cap-statement-print * { visibility: visible !important; }
+  #cap-statement-print {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 40px 48px !important;
+    background: #fff !important;
+    color: #111 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    z-index: 99999 !important;
+  }
+  #cap-statement-print div, #cap-statement-print li, #cap-statement-print ul, #cap-statement-print span { color: #111 !important; background: transparent !important; }
+  #cap-statement-print [style*="color: #7f77dd"], #cap-statement-print [style*="color:#7f77dd"] { color: #4b46b0 !important; }
+  #cap-statement-print [style*="borderBottom"] { border-bottom: 1px solid #ccc !important; }
+}
 `;
 
 const Tag = ({ type }: { type: string }) => {
@@ -417,6 +437,13 @@ function Dashboard() {
   const [appsLoading, setAppsLoading] = useState(false);
   const [appModal, setAppModal] = useState<{ open: boolean; editing: AppEntry | null }>({ open: false, editing: null });
   const [appForm, setAppForm] = useState<typeof emptyAppForm>(emptyAppForm);
+
+  type CapStatement = { companyOverview: string; coreCompetencies: string[]; differentiators: string[]; pastPerformance: string; naicsCodes: string; certifications: string; contactName: string; contactEmail: string; contactPhone: string; contactLocation: string; };
+  const [capStatement, setCapStatement] = useState<CapStatement | null>(null);
+  const [capLoading, setCapLoading] = useState(false);
+  const [capEditing, setCapEditing] = useState(false);
+  const [capDraft, setCapDraft] = useState<CapStatement | null>(null);
+  const [capCopied, setCapCopied] = useState(false);
 
   useEffect(() => { fetchProfile(); fetchChecklist(); fetchApplications(); }, []);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages, aiLoading]);
@@ -629,6 +656,67 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     } catch { /* ignore */ }
   }
 
+  async function generateCapStatement() {
+    setCapLoading(true); setCapEditing(false);
+    try {
+      const r = await fetch(`${API}/ai/capabilitystatement`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile }),
+      });
+      if (r.ok) {
+        const { statement } = await r.json();
+        if (statement && statement.companyOverview) {
+          setCapStatement(statement); setCapDraft(statement);
+        }
+      }
+    } catch { /* ignore */ }
+    setCapLoading(false);
+  }
+
+  function capToText(s: CapStatement): string {
+    return [
+      `CAPABILITY STATEMENT`,
+      `${profile.businessName || "Company"}`,
+      ``,
+      `COMPANY OVERVIEW`,
+      s.companyOverview,
+      ``,
+      `CORE COMPETENCIES`,
+      ...(s.coreCompetencies || []).map(c => `• ${c}`),
+      ``,
+      `DIFFERENTIATORS`,
+      ...(s.differentiators || []).map(d => `• ${d}`),
+      ``,
+      `PAST PERFORMANCE`,
+      s.pastPerformance,
+      ``,
+      `NAICS CODES`,
+      s.naicsCodes,
+      ``,
+      `CERTIFICATIONS & DESIGNATIONS`,
+      s.certifications,
+      ``,
+      `CONTACT INFORMATION`,
+      s.contactName,
+      s.contactEmail,
+      s.contactPhone,
+      s.contactLocation,
+    ].join("\n");
+  }
+
+  function copyCapToClipboard() {
+    if (!capStatement) return;
+    navigator.clipboard.writeText(capToText(capStatement)).then(() => {
+      setCapCopied(true);
+      setTimeout(() => setCapCopied(false), 2000);
+    });
+  }
+
+  function downloadCapPdf() {
+    window.print();
+  }
+
   const score = getScore(checklist), done = getDone(checklist), total = getTotal();
   const urgent = SECTIONS.flatMap(s => s.items.filter(i => i.tags.includes("required") && !checklist[i.id]));
 
@@ -668,6 +756,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     { id: "checklist", icon: "✓", label: "Checklist", section: "Setup", badge: urgent.length || null },
     { id: "docs", icon: "◈", label: "Documents", section: "Setup" },
     { id: "presence", icon: "🌐", label: "Presence", section: "Setup" },
+    { id: "capstatement", icon: "◧", label: "Capability stmt.", section: "Setup" },
     { id: "funding", icon: "$", label: "Opportunities", section: "Funding" },
     { id: "calendar", icon: "◷", label: "Calendar", section: "Funding" },
     { id: "naics", icon: "⌖", label: "NAICS finder", section: "Funding" },
@@ -1361,6 +1450,129 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                       </div>
                     </div>
                   )}
+                </>
+              );
+            })()}
+
+            {screen === "capstatement" && (() => {
+              const cap = capEditing ? capDraft : capStatement;
+              const field = (label: string, key: keyof CapStatement, multiline = false) => (
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#7f77dd", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6 }}>{label}</div>
+                  {capEditing ? (
+                    multiline
+                      ? <textarea value={String(cap?.[key] ?? "")} onChange={e => setCapDraft(d => d ? { ...d, [key]: e.target.value } : d)} rows={3} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13, resize: "vertical", boxSizing: "border-box" }} />
+                      : <input value={String(cap?.[key] ?? "")} onChange={e => setCapDraft(d => d ? { ...d, [key]: e.target.value } : d)} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13, boxSizing: "border-box" }} />
+                  ) : (
+                    <div style={{ fontSize: 13, color: "#c0bdb8", lineHeight: 1.7 }}>{String(cap?.[key] ?? "—")}</div>
+                  )}
+                </div>
+              );
+              const bulletField = (label: string, key: "coreCompetencies" | "differentiators") => (
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#7f77dd", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6 }}>{label}</div>
+                  {capEditing ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {(cap?.[key] ?? []).map((item, i) => (
+                        <input key={i} value={item} onChange={e => setCapDraft(d => { if (!d) return d; const arr = [...d[key]]; arr[i] = e.target.value; return { ...d, [key]: arr }; })} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "8px 12px", color: "#e0ddd8", fontSize: 13, boxSizing: "border-box" }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {(cap?.[key] ?? []).map((item, i) => <li key={i} style={{ fontSize: 13, color: "#c0bdb8", lineHeight: 1.8 }}>{item}</li>)}
+                    </ul>
+                  )}
+                </div>
+              );
+
+              return (
+                <>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4, gap: 12, flexWrap: "wrap" }}>
+                    <div>
+                      <div className="page-title" style={{ marginBottom: 2 }}>Capability statement</div>
+                      <div className="page-sub">AI-generated government contracting one-pager from your profile</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
+                      {capStatement && !capEditing && <>
+                        <button onClick={() => { setCapEditing(true); setCapDraft(capStatement); }} style={{ background: "none", border: "1px solid #2a2a2e", color: "#aaa", borderRadius: 8, padding: "8px 16px", fontSize: 12, cursor: "pointer" }}>Edit</button>
+                        <button onClick={copyCapToClipboard} style={{ background: "none", border: "1px solid #2a2a2e", color: capCopied ? "#1D9E75" : "#aaa", borderRadius: 8, padding: "8px 16px", fontSize: 12, cursor: "pointer" }}>{capCopied ? "Copied!" : "Copy text"}</button>
+                        <button onClick={downloadCapPdf} style={{ background: "#7f77dd", border: "none", color: "#fff", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Download PDF</button>
+                      </>}
+                      {capEditing && <>
+                        <button onClick={() => setCapEditing(false)} style={{ background: "none", border: "1px solid #2a2a2e", color: "#777", borderRadius: 8, padding: "8px 16px", fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                        <button onClick={() => { setCapStatement(capDraft); setCapEditing(false); }} style={{ background: "#7f77dd", border: "none", color: "#fff", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Save edits</button>
+                      </>}
+                      <button onClick={generateCapStatement} disabled={capLoading} style={{ background: capStatement ? "none" : "#7f77dd", border: capStatement ? "1px solid #2a2a2e" : "none", color: capStatement ? "#aaa" : "#fff", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: capLoading ? 0.6 : 1 }}>
+                        {capLoading ? "Generating…" : capStatement ? "↻ Regenerate" : "Generate →"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {!capStatement && !capLoading && (
+                    <div className="card" style={{ textAlign: "center", padding: "52px 24px" }}>
+                      <div style={{ fontSize: 36, marginBottom: 14 }}>◧</div>
+                      <div style={{ fontSize: 15, fontWeight: 500, color: "#d0cdc8", marginBottom: 8 }}>Generate your capability statement</div>
+                      <div style={{ fontSize: 13, color: "#555", maxWidth: 440, margin: "0 auto 24px", lineHeight: 1.7 }}>
+                        A capability statement is the business card of government contracting. The AI will use your saved profile — business name, NAICS codes, certifications, and industry — to write a professional one-pager.
+                      </div>
+                      {!profile.businessName && <div style={{ fontSize: 12, color: "#EF9F27", marginBottom: 16 }}>Tip: Complete your profile first for a better statement.</div>}
+                      <button className="start-btn" style={{ maxWidth: 220 }} onClick={generateCapStatement} disabled={capLoading}>
+                        {capLoading ? "Generating…" : "Generate capability statement →"}
+                      </button>
+                    </div>
+                  )}
+
+                  {capLoading && (
+                    <div className="card" style={{ textAlign: "center", padding: "52px 24px" }}>
+                      <div style={{ fontSize: 13, color: "#555" }}>AI is writing your capability statement…</div>
+                      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 16 }}>
+                        <div className="dot" /><div className="dot" /><div className="dot" />
+                      </div>
+                    </div>
+                  )}
+
+                  {cap && !capLoading && (
+                    <div id="cap-statement-print" className="card" style={{ padding: "28px 32px" }}>
+                      <div style={{ textAlign: "center", marginBottom: 28, paddingBottom: 20, borderBottom: "1px solid #1e1e22" }}>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: "#e0ddd8", fontFamily: "'Syne', sans-serif", marginBottom: 4 }}>{profile.businessName || "Company Name"}</div>
+                        <div style={{ fontSize: 12, color: "#7f77dd", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 600 }}>Capability Statement</div>
+                        {profile.industry && <div style={{ fontSize: 12, color: "#555", marginTop: 4 }}>{profile.industry} · {profile.entityType} · {profile.state}</div>}
+                      </div>
+
+                      {field("Company Overview", "companyOverview", true)}
+                      {bulletField("Core Competencies", "coreCompetencies")}
+                      {bulletField("Differentiators", "differentiators")}
+                      {field("Past Performance", "pastPerformance", true)}
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 8 }}>
+                        <div>
+                          {field("NAICS Codes", "naicsCodes")}
+                          {field("Certifications & Designations", "certifications")}
+                        </div>
+                        <div>
+                          <div style={{ marginBottom: 18 }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "#7f77dd", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6 }}>Contact Information</div>
+                            {capEditing ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                {(["contactName", "contactEmail", "contactPhone", "contactLocation"] as const).map(k => (
+                                  <input key={k} value={cap[k]} onChange={e => setCapDraft(d => d ? { ...d, [k]: e.target.value } : d)} placeholder={k.replace("contact", "")} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "7px 10px", color: "#e0ddd8", fontSize: 12, boxSizing: "border-box" }} />
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 13, color: "#c0bdb8", lineHeight: 2 }}>
+                                {cap.contactName && <div>{cap.contactName}</div>}
+                                {cap.contactEmail && <div>{cap.contactEmail}</div>}
+                                {cap.contactPhone && <div>{cap.contactPhone}</div>}
+                                {cap.contactLocation && <div>{cap.contactLocation}</div>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div id="cap-print-area" style={{ display: "none" }} aria-hidden="true" />
                 </>
               );
             })()}
