@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "@workspace/replit-auth-web";
+import { supabase } from "./lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 
 const API = import.meta.env.BASE_URL + "api";
 
@@ -363,50 +364,278 @@ function getFundingReadiness(f: typeof STATIC_FUNDING[0], cl: Record<string, boo
 }
 
 export default function App() {
-  const { isLoading, isAuthenticated, login } = useAuth();
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authScreen, setAuthScreen] = useState<"signin" | "signup" | "forgot" | "reset">("signin");
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
-  if (isLoading) {
-    return (
-      <>
-        <style>{css}</style>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0a0a0c", color: "#555", fontSize: 14 }}>Loading…</div>
-      </>
-    );
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+      if (event === "PASSWORD_RECOVERY") setIsPasswordRecovery(true);
+      if (event === "SIGNED_OUT") setIsPasswordRecovery(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setSession(null);
+    setAuthScreen("signin");
   }
 
-  if (!isAuthenticated) {
+  if (authLoading) {
     return (
       <>
         <style>{css}</style>
-        <div className="landing">
-          <div style={{ textAlign: "center", maxWidth: 520 }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 42, fontWeight: 700, color: "#f0ede8", letterSpacing: "-1px", marginBottom: 12 }}>Founded Right</div>
-            <div style={{ fontSize: 18, color: "#666", marginBottom: 32, lineHeight: 1.6 }}>Your complete business launch platform — checklist, funding, AI assistant, and more.</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 40, textAlign: "left" }}>
-              {[
-                "46-step personalized setup checklist across 8 categories",
-                "AI-matched federal, state, and local funding opportunities",
-                "NAICS code finder to unlock government contracts",
-                "AI assistant personalized to your business profile",
-              ].map((f, i) => (
-                <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", background: "#141416", border: "1px solid #1e1e22", borderRadius: 8, padding: "10px 14px" }}>
-                  <span style={{ color: "#1D9E75", fontWeight: 700, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 13, color: "#c0bdb8" }}>{f}</span>
-                </div>
-              ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0a0a0c" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 700, color: "#7f77dd", marginBottom: 12 }}>Founded Right</div>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+              <div className="dot" /><div className="dot" style={{ animationDelay: "0.15s" }} /><div className="dot" style={{ animationDelay: "0.3s" }} />
             </div>
-            <button className="start-btn" style={{ maxWidth: 280 }} onClick={login}>Get started →</button>
           </div>
         </div>
       </>
     );
   }
 
-  return <Dashboard />;
+  if (!session) {
+    if (isPasswordRecovery) {
+      return <ResetPasswordScreen onDone={() => { setIsPasswordRecovery(false); setAuthScreen("signin"); }} />;
+    }
+    return <AuthScreens mode={authScreen} setMode={setAuthScreen} />;
+  }
+
+  return <Dashboard session={session} onLogout={handleLogout} />;
 }
 
-function Dashboard() {
-  const { logout } = useAuth();
+function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; setMode: (m: "signin" | "signup" | "forgot") => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const inputStyle: React.CSSProperties = { width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 10, padding: "11px 14px", color: "#e0ddd8", fontSize: 14, boxSizing: "border-box", outline: "none" };
+  const labelStyle: React.CSSProperties = { fontSize: 12, color: "#666", fontWeight: 500, display: "block", marginBottom: 5 };
+
+  async function handleGoogleSignIn() {
+    setError(""); setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) { setError(error.message); setLoading(false); }
+  }
+
+  async function handleSignIn(e: React.FormEvent) {
+    e.preventDefault(); setError(""); setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setError(error.message);
+    setLoading(false);
+  }
+
+  async function handleSignUp(e: React.FormEvent) {
+    e.preventDefault(); setError("");
+    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+    if (error) setError(error.message);
+    else setSuccess("Check your email to confirm your account, then sign in.");
+    setLoading(false);
+  }
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault(); setError(""); setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    if (error) setError(error.message);
+    else setSuccess("Password reset link sent — check your email.");
+    setLoading(false);
+  }
+
+  const brand = (
+    <div style={{ textAlign: "center", marginBottom: 28 }}>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#7f77dd" }} />
+        <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 700, color: "#e0ddd8" }}>Founded Right</span>
+      </div>
+    </div>
+  );
+
+  const googleBtn = (
+    <button type="button" onClick={handleGoogleSignIn} disabled={loading} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 10, padding: "11px 14px", color: "#c0bdb8", fontSize: 14, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+  );
+
+  const divider = (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
+      <div style={{ flex: 1, height: 1, background: "#2a2a2e" }} />
+      <span style={{ fontSize: 12, color: "#444" }}>or</span>
+      <div style={{ flex: 1, height: 1, background: "#2a2a2e" }} />
+    </div>
+  );
+
+  return (
+    <>
+      <style>{css}</style>
+      <div style={{ minHeight: "100vh", background: "#0a0a0c", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          {brand}
+          <div style={{ background: "#0f0f11", border: "1px solid #1e1e22", borderRadius: 16, padding: "32px 28px" }}>
+
+            {mode === "signin" && (
+              <form onSubmit={handleSignIn}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#e0ddd8", fontFamily: "'Syne',sans-serif", marginBottom: 6 }}>Welcome back</div>
+                <div style={{ fontSize: 13, color: "#555", marginBottom: 24 }}>Sign in to your account</div>
+                {error && <div style={{ background: "#E24B4A18", border: "1px solid #E24B4A44", borderRadius: 8, padding: "10px 14px", color: "#E24B4A", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+                {googleBtn}
+                {divider}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelStyle}>Email</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus style={inputStyle} placeholder="you@company.com" />
+                </div>
+                <div style={{ marginBottom: 6 }}>
+                  <label style={labelStyle}>Password</label>
+                  <div style={{ position: "relative" }}>
+                    <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required style={{ ...inputStyle, paddingRight: 42 }} placeholder="••••••••" />
+                    <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 13 }}>{showPw ? "Hide" : "Show"}</button>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", marginBottom: 20 }}>
+                  <button type="button" onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }} style={{ background: "none", border: "none", color: "#7f77dd", fontSize: 12, cursor: "pointer" }}>Forgot password?</button>
+                </div>
+                <button type="submit" disabled={loading} style={{ width: "100%", background: "#7f77dd", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Syne',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Signing in…" : "Sign in"}</button>
+                <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#555" }}>Don't have an account? <button type="button" onClick={() => { setMode("signup"); setError(""); setSuccess(""); }} style={{ background: "none", border: "none", color: "#7f77dd", cursor: "pointer", fontSize: 13 }}>Create account</button></div>
+              </form>
+            )}
+
+            {mode === "signup" && (
+              <form onSubmit={handleSignUp}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#e0ddd8", fontFamily: "'Syne',sans-serif", marginBottom: 6 }}>Create your account</div>
+                <div style={{ fontSize: 13, color: "#555", marginBottom: 24 }}>Get started with Founded Right</div>
+                {error && <div style={{ background: "#E24B4A18", border: "1px solid #E24B4A44", borderRadius: 8, padding: "10px 14px", color: "#E24B4A", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+                {success && <div style={{ background: "#1D9E7518", border: "1px solid #1D9E7544", borderRadius: 8, padding: "10px 14px", color: "#1D9E75", fontSize: 13, marginBottom: 16 }}>{success}</div>}
+                {!success && <>{googleBtn}{divider}</>}
+                {!success && <>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={labelStyle}>Email</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus style={inputStyle} placeholder="you@company.com" />
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={labelStyle}>Password</label>
+                    <div style={{ position: "relative" }}>
+                      <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required style={{ ...inputStyle, paddingRight: 42 }} placeholder="At least 8 characters" />
+                      <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 13 }}>{showPw ? "Hide" : "Show"}</button>
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={labelStyle}>Confirm password</label>
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required style={inputStyle} placeholder="••••••••" />
+                  </div>
+                  <button type="submit" disabled={loading} style={{ width: "100%", background: "#7f77dd", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Syne',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Creating account…" : "Create account"}</button>
+                </>}
+                <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#555" }}>Already have an account? <button type="button" onClick={() => { setMode("signin"); setError(""); setSuccess(""); }} style={{ background: "none", border: "none", color: "#7f77dd", cursor: "pointer", fontSize: 13 }}>Sign in</button></div>
+              </form>
+            )}
+
+            {mode === "forgot" && (
+              <form onSubmit={handleForgotPassword}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#e0ddd8", fontFamily: "'Syne',sans-serif", marginBottom: 6 }}>Reset your password</div>
+                <div style={{ fontSize: 13, color: "#555", marginBottom: 24 }}>We'll send a reset link to your email</div>
+                {error && <div style={{ background: "#E24B4A18", border: "1px solid #E24B4A44", borderRadius: 8, padding: "10px 14px", color: "#E24B4A", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+                {success && <div style={{ background: "#1D9E7518", border: "1px solid #1D9E7544", borderRadius: 8, padding: "10px 14px", color: "#1D9E75", fontSize: 13, marginBottom: 16 }}>{success}</div>}
+                {!success && <>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={labelStyle}>Email</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus style={inputStyle} placeholder="you@company.com" />
+                  </div>
+                  <button type="submit" disabled={loading} style={{ width: "100%", background: "#7f77dd", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Syne',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Sending…" : "Send reset link"}</button>
+                </>}
+                <div style={{ textAlign: "center", marginTop: 20 }}>
+                  <button type="button" onClick={() => { setMode("signin"); setError(""); setSuccess(""); }} style={{ background: "none", border: "none", color: "#7f77dd", fontSize: 13, cursor: "pointer" }}>← Back to sign in</button>
+                </div>
+              </form>
+            )}
+
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const inputStyle: React.CSSProperties = { width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 10, padding: "11px 14px", color: "#e0ddd8", fontSize: 14, boxSizing: "border-box", outline: "none" };
+  const labelStyle: React.CSSProperties = { fontSize: 12, color: "#666", fontWeight: 500, display: "block", marginBottom: 5 };
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault(); setError("");
+    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) { setError(error.message); setLoading(false); }
+    else { setSuccess(true); setTimeout(onDone, 2000); }
+  }
+
+  return (
+    <>
+      <style>{css}</style>
+      <div style={{ minHeight: "100vh", background: "#0a0a0c", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#7f77dd" }} />
+              <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 700, color: "#e0ddd8" }}>Founded Right</span>
+            </div>
+          </div>
+          <div style={{ background: "#0f0f11", border: "1px solid #1e1e22", borderRadius: 16, padding: "32px 28px" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#e0ddd8", fontFamily: "'Syne',sans-serif", marginBottom: 6 }}>Set new password</div>
+            <div style={{ fontSize: 13, color: "#555", marginBottom: 24 }}>Choose a strong password for your account</div>
+            {success ? (
+              <div style={{ background: "#1D9E7518", border: "1px solid #1D9E7544", borderRadius: 8, padding: "14px", color: "#1D9E75", fontSize: 13, textAlign: "center" }}>Password updated! Signing you in…</div>
+            ) : (
+              <form onSubmit={handleReset}>
+                {error && <div style={{ background: "#E24B4A18", border: "1px solid #E24B4A44", borderRadius: 8, padding: "10px 14px", color: "#E24B4A", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelStyle}>New password</label>
+                  <div style={{ position: "relative" }}>
+                    <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required autoFocus style={{ ...inputStyle, paddingRight: 42 }} placeholder="At least 8 characters" />
+                    <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 13 }}>{showPw ? "Hide" : "Show"}</button>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 24 }}>
+                  <label style={labelStyle}>Confirm password</label>
+                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required style={inputStyle} placeholder="••••••••" />
+                </div>
+                <button type="submit" disabled={loading} style={{ width: "100%", background: "#7f77dd", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Syne',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Updating…" : "Update password"}</button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Dashboard({ session, onLogout }: { session: Session; onLogout: () => void }) {
   const [screen, setScreen] = useState("dashboard");
   const [profile, setProfile] = useState<Profile>(defaultProfile);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
@@ -445,12 +674,14 @@ function Dashboard() {
   const [capDraft, setCapDraft] = useState<CapStatement | null>(null);
   const [capCopied, setCapCopied] = useState(false);
 
+  const authHeaders = () => ({ Authorization: `Bearer ${session.access_token}` });
+
   useEffect(() => { fetchProfile(); fetchChecklist(); fetchApplications(); }, []);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages, aiLoading]);
 
   async function fetchProfile() {
     try {
-      const r = await fetch(`${API}/profile`, { credentials: "include" });
+      const r = await fetch(`${API}/profile`, { headers: authHeaders() });
       if (r.ok) {
         const d = await r.json();
         setProfile({
@@ -480,7 +711,7 @@ function Dashboard() {
 
   async function fetchChecklist() {
     try {
-      const r = await fetch(`${API}/checklist-state`, { credentials: "include" });
+      const r = await fetch(`${API}/checklist-state`, { headers: authHeaders() });
       if (r.ok) setChecklist(await r.json());
     } catch { /* ignore */ }
   }
@@ -490,8 +721,8 @@ function Dashboard() {
     setProfile(next);
     try {
       await fetch(`${API}/profile`, {
-        method: "PUT", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(next),
       });
     } catch { /* ignore */ }
@@ -502,8 +733,8 @@ function Dashboard() {
     setChecklist(next);
     try {
       await fetch(`${API}/checklist-state`, {
-        method: "PUT", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ itemId: id, completed: !checklist[id] }),
       });
     } catch { /* ignore */ }
@@ -549,8 +780,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     try {
       const history = chatMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
       const r = await fetch(`${API}/ai/chat`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ message: msg, history, systemPrompt }),
       });
       if (r.ok) {
@@ -570,8 +801,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     setNaicsLoading(true); setNaicsError(""); setNaicsSearched(false);
     try {
       const r = await fetch(`${API}/ai/naics`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ query: naicsQuery, industry: profile.industry }),
       });
       if (r.ok) {
@@ -589,8 +820,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     setGrantsLoading(true);
     try {
       const r = await fetch(`${API}/ai/grants`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ profile }),
       });
       if (r.ok) {
@@ -611,7 +842,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
   async function fetchApplications() {
     setAppsLoading(true);
     try {
-      const r = await fetch(`${API}/applications`, { credentials: "include" });
+      const r = await fetch(`${API}/applications`, { headers: authHeaders() });
       if (r.ok) setApplications(await r.json());
     } catch { /* ignore */ }
     setAppsLoading(false);
@@ -625,10 +856,10 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     if (!appForm.programName.trim()) return;
     try {
       if (appModal.editing) {
-        const r = await fetch(`${API}/applications/${appModal.editing.id}`, { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(appForm) });
+        const r = await fetch(`${API}/applications/${appModal.editing.id}`, { method: "PUT", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(appForm) });
         if (r.ok) { const updated = await r.json(); setApplications(prev => prev.map(a => a.id === updated.id ? updated : a)); }
       } else {
-        const r = await fetch(`${API}/applications`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(appForm) });
+        const r = await fetch(`${API}/applications`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(appForm) });
         if (r.ok) { const created = await r.json(); setApplications(prev => [...prev, created]); }
       }
     } catch { /* ignore */ }
@@ -638,7 +869,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
   async function deleteApp(id: string) {
     if (!confirm("Delete this application?")) return;
     try {
-      await fetch(`${API}/applications/${id}`, { method: "DELETE", credentials: "include" });
+      await fetch(`${API}/applications/${id}`, { method: "DELETE", headers: authHeaders() });
       setApplications(prev => prev.filter(a => a.id !== id));
     } catch { /* ignore */ }
   }
@@ -649,8 +880,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     try {
       await fetch(`${API}/applications/${id}`, {
-        method: "PUT", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ ...app, status }),
       });
     } catch { /* ignore */ }
@@ -660,8 +891,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     setCapLoading(true); setCapEditing(false);
     try {
       const r = await fetch(`${API}/ai/capabilitystatement`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ profile }),
       });
       if (r.ok) {
@@ -791,7 +1022,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
             );
           })}
           <div style={{ marginTop: "auto", padding: "12px 18px", borderTop: "1px solid #1a1a1e" }}>
-            <button className="reset-btn" onClick={logout} style={{ width: "100%" }}>Sign out</button>
+            <button className="reset-btn" onClick={onLogout} style={{ width: "100%" }}>Sign out</button>
           </div>
         </div>
 

@@ -1,55 +1,33 @@
-import * as oidc from "openid-client";
+import { createClient } from "@supabase/supabase-js";
 import { type Request, type Response, type NextFunction } from "express";
-import type { AuthUser } from "@workspace/api-zod";
-import {
-  clearSession,
-  getOidcConfig,
-  getSessionId,
-  getSession,
-  updateSession,
-  type SessionData,
-} from "../lib/auth";
+import { db, usersTable } from "@workspace/db";
+import { SESSION_COOKIE } from "../lib/auth";
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false },
+});
 
 declare global {
   namespace Express {
-    interface User extends AuthUser {}
+    interface User {
+      id: string;
+      email: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      profileImageUrl: string | null;
+    }
 
     interface Request {
       isAuthenticated(): this is AuthedRequest;
-
       user?: User | undefined;
     }
 
     export interface AuthedRequest {
       user: User;
     }
-  }
-}
-
-async function refreshIfExpired(
-  sid: string,
-  session: SessionData,
-): Promise<SessionData | null> {
-  const now = Math.floor(Date.now() / 1000);
-  if (!session.expires_at || now <= session.expires_at) return session;
-
-  if (!session.refresh_token) return null;
-
-  try {
-    const config = await getOidcConfig();
-    const tokens = await oidc.refreshTokenGrant(
-      config,
-      session.refresh_token,
-    );
-    session.access_token = tokens.access_token;
-    session.refresh_token = tokens.refresh_token ?? session.refresh_token;
-    session.expires_at = tokens.expiresIn()
-      ? now + tokens.expiresIn()!
-      : session.expires_at;
-    await updateSession(sid, session);
-    return session;
-  } catch {
-    return null;
   }
 }
 
@@ -62,26 +40,59 @@ export async function authMiddleware(
     return this.user != null;
   } as Request["isAuthenticated"];
 
-  const sid = getSessionId(req);
-  if (!sid) {
+  // Clear legacy Replit session cookies if present
+  if (req.cookies?.[SESSION_COOKIE]) {
+    res.clearCookie(SESSION_COOKIE, { path: "/" });
+  }
+
+  const authHeader = req.headers["authorization"];
+  if (!authHeader?.startsWith("Bearer ")) {
     next();
     return;
   }
 
-  const session = await getSession(sid);
-  if (!session?.user?.id) {
-    await clearSession(res, sid);
-    next();
-    return;
-  }
+  const token = authHeader.slice(7);
 
-  const refreshed = await refreshIfExpired(sid, session);
-  if (!refreshed) {
-    await clearSession(res, sid);
-    next();
-    return;
-  }
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-  req.user = refreshed.user;
-  next();
+    if (error || !user) {
+      next();
+      return;
+    }
+
+    const fullName: string = (user.user_metadata?.full_name as string) || "";
+    const parts = fullName.trim().split(" ");
+    const firstName = parts[0] || null;
+    const lastName = parts.slice(1).join(" ") || null;
+
+    await db
+      .insert(usersTable)
+      .values({
+        id: user.id,
+        email: user.email || null,
+        firstName,
+        lastName,
+        profileImageUrl: (user.user_metadata?.avatar_url as string) || null,
+      })
+      .onConflictDoUpdate({
+        target: usersTable.id,
+        set: {
+          email: user.email || null,
+          updatedAt: new Date(),
+        },
+      });
+
+    req.user = {
+      id: user.id,
+      email: user.email || null,
+      firstName,
+      lastName,
+      profileImageUrl: (user.user_metadata?.avatar_url as string) || null,
+    };
+
+    next();
+  } catch {
+    next();
+  }
 }
