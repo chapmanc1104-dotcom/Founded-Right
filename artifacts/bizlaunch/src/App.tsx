@@ -323,6 +323,226 @@ input, textarea, select { font-family: inherit; outline: none; border: none; bac
 }
 `;
 
+const landingCss = `
+.lp * { box-sizing: border-box; }
+.lp { background: #0a0a0c; color: #e0ddd8; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+.lp-nav { position: sticky; top: 0; z-index: 100; background: rgba(10,10,12,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid #1a1a1e; padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+.lp-nav-logo { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+.lp-nav-logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #7f77dd; flex-shrink: 0; }
+.lp-nav-logo-text { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: #f0ede8; }
+.lp-nav-actions { display: flex; align-items: center; gap: 20px; }
+.lp-nav-signin { font-size: 14px; color: #888; background: none; border: none; cursor: pointer; transition: color 0.15s; padding: 0; }
+.lp-nav-signin:hover { color: #e0ddd8; }
+.lp-nav-cta { font-size: 14px; font-weight: 600; background: #7f77dd; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+.lp-nav-cta:hover { background: #9b93e8; }
+.lp-section { padding: 100px 24px; max-width: 1080px; margin: 0 auto; }
+.lp-section-sm { padding: 80px 24px; max-width: 1080px; margin: 0 auto; }
+.lp-label { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #7f77dd; background: #7f77dd18; border: 1px solid #7f77dd33; border-radius: 99px; padding: 4px 14px; margin-bottom: 20px; }
+.lp-h1 { font-family: 'Syne', sans-serif; font-size: clamp(36px, 6vw, 60px); font-weight: 700; line-height: 1.1; color: #f0ede8; letter-spacing: -1px; margin-bottom: 22px; }
+.lp-h2 { font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 42px); font-weight: 700; line-height: 1.15; color: #f0ede8; letter-spacing: -0.5px; margin-bottom: 14px; }
+.lp-sub { font-size: clamp(16px, 2vw, 19px); color: #888; line-height: 1.65; max-width: 620px; }
+.lp-btn-primary { display: inline-flex; align-items: center; gap: 8px; background: #7f77dd; color: #fff; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; padding: 15px 32px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s; letter-spacing: -0.2px; text-decoration: none; }
+.lp-btn-primary:hover { background: #9b93e8; transform: translateY(-1px); box-shadow: 0 8px 24px #7f77dd33; }
+.lp-btn-ghost { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: #888; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 600; padding: 15px 28px; border-radius: 12px; border: 1px solid #2a2a2e; cursor: pointer; transition: all 0.2s; }
+.lp-btn-ghost:hover { border-color: #555; color: #e0ddd8; }
+.lp-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 36px; }
+.lp-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 52px; }
+.lp-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 52px; }
+.lp-card { background: #0f0f11; border: 1px solid #1e1e22; border-radius: 16px; padding: 28px 26px; transition: border-color 0.2s; }
+.lp-card:hover { border-color: #7f77dd44; }
+.lp-card-icon { font-size: 28px; margin-bottom: 16px; }
+.lp-card-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: #f0ede8; margin-bottom: 10px; line-height: 1.3; }
+.lp-card-body { font-size: 14px; color: #666; line-height: 1.65; }
+.lp-pain-num { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 700; color: #2a2a2e; margin-bottom: 14px; }
+.lp-stat-val { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 700; color: #7f77dd; margin-bottom: 8px; }
+.lp-stat-label { font-size: 14px; color: #666; line-height: 1.5; }
+.lp-cta-wrap { background: linear-gradient(135deg, #7f77dd14 0%, #0f0f11 60%); border: 1px solid #1e1e22; border-radius: 24px; padding: 80px 40px; text-align: center; }
+.lp-footer { border-top: 1px solid #1a1a1e; padding: 32px 24px; max-width: 1080px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.lp-footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.lp-footer-link { font-size: 13px; color: #555; background: none; border: none; cursor: pointer; transition: color 0.15s; padding: 0; text-decoration: none; }
+.lp-footer-link:hover { color: #aaa; }
+.lp-footer-copy { font-size: 12px; color: #444; }
+.lp-divider { width: 100%; height: 1px; background: linear-gradient(to right, transparent, #1e1e22, transparent); }
+.fade-up { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.fade-up.visible { opacity: 1; transform: none; }
+.fade-up.d1 { transition-delay: 0.1s; }
+.fade-up.d2 { transition-delay: 0.2s; }
+.fade-up.d3 { transition-delay: 0.3s; }
+.fade-up.d4 { transition-delay: 0.4s; }
+.fade-up.d5 { transition-delay: 0.5s; }
+.fade-up.d6 { transition-delay: 0.6s; }
+@media (max-width: 768px) {
+  .lp-grid-3 { grid-template-columns: 1fr; }
+  .lp-grid-2 { grid-template-columns: 1fr; }
+  .lp-section { padding: 72px 20px; }
+  .lp-section-sm { padding: 60px 20px; }
+  .lp-cta-wrap { padding: 52px 24px; }
+  .lp-nav { padding: 0 20px; }
+  .lp-footer { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 480px) {
+  .lp-hero-btns { flex-direction: column; }
+  .lp-btn-primary, .lp-btn-ghost { justify-content: center; }
+}
+`;
+
+function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: () => void }) {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }),
+      { threshold: 0.12 }
+    );
+    document.querySelectorAll(".fade-up").forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
+  return (
+    <>
+      <style>{css}</style>
+      <style>{landingCss}</style>
+      <div className="lp">
+
+        {/* Nav */}
+        <nav className="lp-nav">
+          <div className="lp-nav-logo">
+            <div className="lp-nav-logo-dot" />
+            <span className="lp-nav-logo-text">FoundedRight</span>
+          </div>
+          <div className="lp-nav-actions">
+            <button className="lp-nav-signin" onClick={onSignIn}>Sign in</button>
+            <button className="lp-nav-cta" onClick={onSignUp}>Sign up free</button>
+          </div>
+        </nav>
+
+        {/* Hero */}
+        <section className="lp-section" style={{ textAlign: "center", paddingTop: 120, paddingBottom: 120 }}>
+          <div className="lp-label">Business setup platform for LLC owners</div>
+          <h1 className="lp-h1">Stop guessing<br />what to do next.</h1>
+          <p className="lp-sub" style={{ margin: "0 auto" }}>
+            FoundedRight walks you step by step through everything your LLC needs to get funded, win government contracts, and build a professional presence — all in one place.
+          </p>
+          <div className="lp-hero-btns" style={{ justifyContent: "center" }}>
+            <button className="lp-btn-primary" onClick={onSignUp}>
+              Sign up free
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            <button className="lp-btn-ghost" onClick={() => scrollTo("lp-problem")}>See how it works</button>
+          </div>
+        </section>
+
+        <div className="lp-divider" />
+
+        {/* Problem */}
+        <section id="lp-problem" className="lp-section">
+          <div style={{ textAlign: "center" }}>
+            <div className="lp-label fade-up">The problem</div>
+            <h2 className="lp-h2 fade-up d1" style={{ margin: "0 auto 14px" }}>Starting an LLC is the easy part.</h2>
+            <p className="lp-sub fade-up d2" style={{ margin: "0 auto" }}>Most founders file the paperwork and then hit a wall. Nobody tells you what happens next — or what it actually takes to get funded.</p>
+          </div>
+          <div className="lp-grid-3">
+            {[
+              { num: "01", title: "You don't know which steps actually matter for funding", body: "There are hundreds of things you could do. Most don't move the needle. Knowing the right 46 steps — in the right order — changes everything." },
+              { num: "02", title: "Grant and loan applications keep getting rejected or ignored", body: "It's not just what you apply for — it's how ready your business looks on paper. Most rejections happen before anyone reads your application." },
+              { num: "03", title: "Government contracts feel impossible to break into", body: "SAM.gov, NAICS codes, capability statements, set-asides — the terminology alone is a barrier. But billions in contracts go to small businesses every year." },
+            ].map((p, i) => (
+              <div key={i} className={`lp-card fade-up d${i + 1}`}>
+                <div className="lp-pain-num">{p.num}</div>
+                <div className="lp-card-title">{p.title}</div>
+                <div className="lp-card-body">{p.body}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="lp-divider" />
+
+        {/* Features */}
+        <section id="lp-features" className="lp-section" style={{ background: "#0f0f11" }}>
+          <div style={{ textAlign: "center" }}>
+            <div className="lp-label fade-up">What's inside</div>
+            <h2 className="lp-h2 fade-up d1" style={{ margin: "0 auto 14px" }}>Everything you need.<br />Nothing you don't.</h2>
+            <p className="lp-sub fade-up d2" style={{ margin: "0 auto" }}>One platform built specifically for new LLC owners who want to get funded, get contracts, and get taken seriously.</p>
+          </div>
+          <div className="lp-grid-3">
+            {[
+              { icon: "✅", title: "Personalized Setup Checklist", body: "46 steps across 8 categories — legal, banking, credit, federal registrations, presence, and more. Each item explains why it matters." },
+              { icon: "💰", title: "AI-Matched Funding Opportunities", body: "Grants, loans, and contracts matched to your business profile. Know which ones you're ready for and what's still blocking you." },
+              { icon: "🏛️", title: "NAICS Code Finder", body: "Describe your business in plain English and get the exact NAICS codes you need for government contracting and federal grant eligibility." },
+              { icon: "📄", title: "Capability Statement Generator", body: "AI generates a professional one-pager from your business profile. Ready to attach to any government contract application." },
+              { icon: "📋", title: "Application Tracker", body: "Track every grant, loan, and contract you've applied for. Log statuses, deadlines, and follow-up notes in one place." },
+              { icon: "🤖", title: "AI Assistant That Knows Your Business", body: "Ask anything about your checklist, certifications, or funding options. Your AI assistant has full context of your business profile." },
+            ].map((f, i) => (
+              <div key={i} className={`lp-card fade-up d${(i % 3) + 1}`}>
+                <div className="lp-card-icon">{f.icon}</div>
+                <div className="lp-card-title">{f.title}</div>
+                <div className="lp-card-body">{f.body}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="lp-divider" />
+
+        {/* Social proof */}
+        <section id="lp-proof" className="lp-section-sm" style={{ background: "#0a0a0c" }}>
+          <div style={{ textAlign: "center" }}>
+            <div className="lp-label fade-up">By the numbers</div>
+            <h2 className="lp-h2 fade-up d1" style={{ margin: "0 auto 14px" }}>Built for new LLC owners<br />who mean business.</h2>
+          </div>
+          <div className="lp-grid-3" style={{ marginTop: 48 }}>
+            {[
+              { val: "5.5M", label: "New businesses formed in the US in 2023 alone — a record high." },
+              { val: "21.6M", label: "Active LLCs currently operating in the United States." },
+              { val: "Billions", label: "In federal grants go unclaimed every year because applicants aren't structured to qualify." },
+            ].map((s, i) => (
+              <div key={i} className={`lp-card fade-up d${i + 1}`} style={{ textAlign: "center" }}>
+                <div className="lp-stat-val">{s.val}</div>
+                <div className="lp-stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="lp-divider" />
+
+        {/* CTA */}
+        <section className="lp-section-sm" style={{ background: "#0f0f11" }}>
+          <div className="lp-cta-wrap fade-up">
+            <div className="lp-label" style={{ marginBottom: 24 }}>Get started today</div>
+            <h2 className="lp-h2" style={{ marginBottom: 16 }}>Your LLC deserves a real foundation.</h2>
+            <p className="lp-sub" style={{ margin: "0 auto 36px", maxWidth: 500 }}>
+              Join thousands of business owners who are getting structured, getting funded, and getting contracts.
+            </p>
+            <button className="lp-btn-primary" onClick={onSignUp} style={{ fontSize: 17, padding: "17px 40px" }}>
+              Sign up free
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer style={{ borderTop: "1px solid #1a1a1e", padding: "32px 24px", background: "#0a0a0c" }}>
+          <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+            <div className="lp-nav-logo">
+              <div className="lp-nav-logo-dot" />
+              <span className="lp-nav-logo-text" style={{ fontSize: 15 }}>FoundedRight</span>
+            </div>
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+              <button className="lp-footer-link" onClick={() => {}}>Privacy Policy</button>
+              <button className="lp-footer-link" onClick={() => {}}>Terms of Service</button>
+              <button className="lp-footer-link" onClick={() => {}}>Contact</button>
+            </div>
+            <span className="lp-footer-copy">© 2026 FoundedRight</span>
+          </div>
+        </footer>
+
+      </div>
+    </>
+  );
+}
+
 const Tag = ({ type }: { type: string }) => {
   const map: Record<string, { bg: string; color: string; label: string }> = {
     required: { bg: "#E24B4A18", color: "#E24B4A", label: "required" },
@@ -368,6 +588,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authScreen, setAuthScreen] = useState<"signin" | "signup" | "forgot" | "reset">("signin");
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
 
   useEffect(() => {
     // Check if we're on the /reset-password path before session loads
@@ -401,6 +622,7 @@ export default function App() {
   async function handleLogout() {
     await supabase.auth.signOut();
     setSession(null);
+    setShowLanding(false);
     setAuthScreen("signin");
   }
 
@@ -436,6 +658,14 @@ export default function App() {
   }
 
   if (!session) {
+    if (showLanding) {
+      return (
+        <LandingPage
+          onSignUp={() => { setShowLanding(false); setAuthScreen("signup"); }}
+          onSignIn={() => { setShowLanding(false); setAuthScreen("signin"); }}
+        />
+      );
+    }
     return <AuthScreens mode={authScreen} setMode={setAuthScreen} />;
   }
 

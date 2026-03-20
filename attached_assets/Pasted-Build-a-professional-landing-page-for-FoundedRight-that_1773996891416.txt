@@ -1,0 +1,64 @@
+Build a professional landing page for FoundedRight that appears before the sign-in screen. When someone visits foundedright.co they should see this landing page first with a "Sign up free" button that takes them to the sign-up screen, and a "Sign in" link for existing users.
+The landing page should have a dark theme matching the app and include these sections:
+1. Hero section:
+
+Headline: "Stop guessing what to do next."
+Subheadline: "FoundedRight walks you step by step through everything your LLC needs to get funded, win government contracts, and build a professional presence — all in one place."
+Two buttons: "Sign up free" (primary) and "See how it works" (scrolls down)
+
+2. Problem section:
+
+Heading: "Starting an LLC is the easy part."
+Three pain points in cards:
+
+"You don't know which steps actually matter for funding"
+"Grant and loan applications keep getting rejected or ignored"
+"Government contracts feel impossible to break into"
+
+
+
+3. Features section:
+
+Heading: "Everything you need. Nothing you don't."
+Six feature cards with icons:
+
+Personalized setup checklist (46 steps across 8 categories)
+AI-matched funding opportunities (grants, loans, contracts)
+NAICS code finder for government contracting
+Capability statement generator
+Application tracker
+AI assistant that knows your business
+
+
+
+4. Social proof section:
+
+Heading: "Built for new LLC owners who mean business"
+Three stat cards:
+
+"5.5M new businesses formed in 2023"
+"21.6M active LLCs in the US"
+"Billions in grants go unclaimed every year"
+
+
+
+5. Final CTA section:
+
+Heading: "Your LLC deserves a real foundation."
+Subtext: "Join thousands of business owners who are getting structured, getting funded, and getting contracts."
+Big "Sign up free" button
+
+6. Footer:
+
+FoundedRight logo/name
+Links: Privacy Policy, Terms of Service, Contact
+Copyright 2026 FoundedRight
+
+Design requirements:
+
+Dark background matching the app (#0f0f11)
+Purple accent color (#7f77dd) for buttons and highlights
+Clean, modern typography
+Smooth scroll animations as sections come into view
+Fully mobile responsive
+Fast loading
