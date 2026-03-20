@@ -1,0 +1,105 @@
+I want to redesign the entire app including the landing page with a new light and clean professional theme. Please update every screen — landing page, auth screens, dashboard, checklist, all screens — with this design system:
+Color palette:
+
+Background: #FFFFFF (white)
+Secondary background: #F7F8FA (light grey)
+Primary accent: #1B3A6B (navy blue)
+Secondary accent: #2D5BE3 (bright blue for buttons and links)
+Success: #0D7A4E (green)
+Warning: #B45309 (amber)
+Danger: #B91C1C (red)
+Text primary: #0F172A (near black)
+Text secondary: #64748B (grey)
+Border: #E2E8F0 (light grey)
+
+Typography:
+
+Headings: Inter or Plus Jakarta Sans, bold
+Body: Inter, regular
+Clean, generous spacing
+
+Design style:
+
+White cards with subtle light grey borders and soft shadows
+Navy blue sidebar
+Rounded corners on all cards and buttons
+Professional and trustworthy — similar to QuickBooks or LegalZoom
+Fully mobile responsive
+
+Landing page sections (in order):
+
+Navigation bar — FoundedRight logo left, "Sign in" and "Sign up free" buttons right
+Hero section:
+
+
+Headline: "Stop guessing what to do next."
+Subheadline: "FoundedRight walks you step by step through everything your LLC needs to get funded, win government contracts, and build a professional presence — all in one place."
+Two buttons: "Sign up free" (navy filled) and "See how it works" (outlined)
+Hero image or illustration showing the dashboard
+
+
+Problem section:
+
+
+Heading: "Starting an LLC is the easy part."
+Three pain point cards:
+
+"You don't know which steps actually matter for funding"
+"Grant and loan applications keep getting rejected or ignored"
+"Government contracts feel impossible to break into"
+
+
+
+
+Features section:
+
+
+Heading: "Everything you need. Nothing you don't."
+Six feature cards with icons:
+
+Personalized setup checklist
+AI-matched funding opportunities
+NAICS code finder
+Capability statement generator
+Application tracker
+AI business advisor
+
+
+
+
+Stats section:
+
+
+Heading: "Built for new LLC owners who mean business"
+Three stat cards:
+
+"5.5M new businesses formed in 2023"
+"21.6M active LLCs in the US"
+"Billions in grants go unclaimed every year"
+
+
+
+
+Final CTA section:
+
+
+Heading: "Your LLC deserves a real foundation."
+Subtext: "Get structured, get funded, and get contracts — starting today."
+Big "Sign up free" button
+
+
+Footer:
+
+
+FoundedRight name and tagline
+Links: Privacy Policy, Terms of Service, Contact
+Copyright 2026 FoundedRight
+
+App screens — apply the same light theme to all screens:
+
+Navy blue sidebar with white text
+White main content area
+Light grey section backgrounds
+Navy and blue accents throughout
+All cards white with light borders and subtle shadows
+Keep all existing functionality exactly the same — only change the visual design

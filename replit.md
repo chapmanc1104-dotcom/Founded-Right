@@ -98,19 +98,28 @@ React hook (`useAuth`) for Replit OIDC auth on the web. Exports `useAuth()` whic
 
 ### `artifacts/bizlaunch` (`@workspace/bizlaunch`)
 
-Founded Right — a comprehensive business launch platform. Single-page React + Vite app with 8 screens:
+FoundedRight — a comprehensive business launch platform. Single-page React + Vite app.
+
+**Theme**: Light professional theme — white/`#F7F8FA` backgrounds, navy `#1B3A6B` sidebar, blue `#2D5BE3` accent, Inter + Plus Jakarta Sans fonts. Redesigned from dark mode (Dec 2024).
+
+**Screens** (10+):
+- **Landing page**: Marketing page shown to unauthenticated users
+- **Auth**: Sign in, sign up, forgot password, reset password (Supabase Auth, Google OAuth)
+- **Onboarding**: 5-step onboarding wizard (Welcome → Business → Owner → Goals → Review)
 - **Dashboard**: Score ring SVG, category progress bars, funding matches
 - **Checklist**: 46 items across 8 categories (Legal, Banking, Credit, Federal, Certs, Grants, Presence, Loans) with filter and accordion
 - **Documents**: Document vault linked to checklist state
-- **Presence**: Professional presence tracker
-- **Opportunities**: Static funding database (8 programs) with readiness tracking
+- **Presence**: Professional presence tracker (8 metrics)
+- **Funding**: Static funding database (8 programs) with readiness tracking
 - **Calendar**: Deadline calendar with event list
 - **NAICS Finder**: AI-powered NAICS code search via `/api/ai/naics`
 - **Live Grants**: AI-matched funding via `/api/ai/grants`
+- **Application Tracker**: CRUD tracker for grant applications
+- **Capability Statement**: AI-generated one-pager via `/api/ai/capability-statement`
 - **AI Assistant**: Chat with Claude claude-3-5-haiku personalized to user's profile
 
-Auth: `@workspace/replit-auth-web` → `useAuth()` → redirects to `/api/login`
-Profile + checklist state persisted to PostgreSQL via `/api/profile` and `/api/checklist-state`
+Auth: Supabase Auth (email/password + Google OAuth). `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` env vars.
+Profile + checklist state persisted to PostgreSQL via `/api/profile`, `/api/checklist-state`, `/api/applications`.
 
 ### `scripts` (`@workspace/scripts`)
 
