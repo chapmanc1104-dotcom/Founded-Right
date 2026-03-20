@@ -411,7 +411,14 @@ function Dashboard() {
   const [liveGrantFilter, setLiveGrantFilter] = useState("all");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetchProfile(); fetchChecklist(); }, []);
+  type AppEntry = { id: string; programName: string; type: string; agency: string; amountRequested: string; status: string; deadline: string; notes: string; };
+  const emptyAppForm = { programName: "", type: "Grant", agency: "", amountRequested: "", status: "Researching", deadline: "", notes: "" };
+  const [applications, setApplications] = useState<AppEntry[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [appModal, setAppModal] = useState<{ open: boolean; editing: AppEntry | null }>({ open: false, editing: null });
+  const [appForm, setAppForm] = useState<typeof emptyAppForm>(emptyAppForm);
+
+  useEffect(() => { fetchProfile(); fetchChecklist(); fetchApplications(); }, []);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages, aiLoading]);
 
   async function fetchProfile() {
@@ -574,6 +581,41 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     setGrantsLoading(false);
   }
 
+  async function fetchApplications() {
+    setAppsLoading(true);
+    try {
+      const r = await fetch(`${API}/applications`, { credentials: "include" });
+      if (r.ok) setApplications(await r.json());
+    } catch { /* ignore */ }
+    setAppsLoading(false);
+  }
+
+  function openAddApp() { setAppForm(emptyAppForm); setAppModal({ open: true, editing: null }); }
+  function openEditApp(a: AppEntry) { setAppForm({ programName: a.programName, type: a.type, agency: a.agency, amountRequested: a.amountRequested, status: a.status, deadline: a.deadline, notes: a.notes }); setAppModal({ open: true, editing: a }); }
+  function closeAppModal() { setAppModal({ open: false, editing: null }); }
+
+  async function saveApp() {
+    if (!appForm.programName.trim()) return;
+    try {
+      if (appModal.editing) {
+        const r = await fetch(`${API}/applications/${appModal.editing.id}`, { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(appForm) });
+        if (r.ok) { const updated = await r.json(); setApplications(prev => prev.map(a => a.id === updated.id ? updated : a)); }
+      } else {
+        const r = await fetch(`${API}/applications`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(appForm) });
+        if (r.ok) { const created = await r.json(); setApplications(prev => [...prev, created]); }
+      }
+    } catch { /* ignore */ }
+    closeAppModal();
+  }
+
+  async function deleteApp(id: string) {
+    if (!confirm("Delete this application?")) return;
+    try {
+      await fetch(`${API}/applications/${id}`, { method: "DELETE", credentials: "include" });
+      setApplications(prev => prev.filter(a => a.id !== id));
+    } catch { /* ignore */ }
+  }
+
   const score = getScore(checklist), done = getDone(checklist), total = getTotal();
   const urgent = SECTIONS.flatMap(s => s.items.filter(i => i.tags.includes("required") && !checklist[i.id]));
 
@@ -617,6 +659,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     { id: "calendar", icon: "◷", label: "Calendar", section: "Funding" },
     { id: "naics", icon: "⌖", label: "NAICS finder", section: "Funding" },
     { id: "livegrants", icon: "◎", label: "Live grants", section: "Funding" },
+    { id: "tracker", icon: "▦", label: "App tracker", section: "Funding" },
     { id: "ai", icon: "✦", label: "AI assistant", section: "Support" },
   ];
 
@@ -1158,6 +1201,150 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                 </div>
               </>
             )}
+
+            {screen === "tracker" && (() => {
+              const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+                Researching:  { bg: "#185FA520", color: "#378ADD" },
+                Drafting:     { bg: "#185FA520", color: "#378ADD" },
+                Submitted:    { bg: "#7f77dd20", color: "#9b8ff0" },
+                "Under Review": { bg: "#BA751720", color: "#EF9F27" },
+                Awarded:      { bg: "#1D9E7520", color: "#1D9E75" },
+                Declined:     { bg: "#E24B4A20", color: "#E24B4A" },
+                Withdrawn:    { bg: "#33333a",   color: "#666" },
+              };
+              const STATUSES = Object.keys(STATUS_COLORS);
+              const TYPES = ["Grant", "Loan", "Gov Contract"];
+              const totalApplied = applications.length;
+              const totalAwarded = applications.filter(a => a.status === "Awarded").length;
+              const totalPending = applications.filter(a => ["Submitted", "Under Review", "Drafting", "Researching"].includes(a.status)).length;
+              const totalAmountAwarded = applications.filter(a => a.status === "Awarded").reduce((sum, a) => {
+                const n = parseFloat((a.amountRequested || "").replace(/[^0-9.]/g, ""));
+                return sum + (isNaN(n) ? 0 : n);
+              }, 0);
+              return (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div>
+                      <div className="page-title" style={{ marginBottom: 2 }}>Application tracker</div>
+                      <div className="page-sub">Track every grant, loan, and contract application in one place</div>
+                    </div>
+                    <button className="start-btn" style={{ maxWidth: 180, padding: "10px 20px", fontSize: 13 }} onClick={openAddApp}>+ Add application</button>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 18 }}>
+                    {[
+                      { label: "Total applied", value: totalApplied, color: "#9b8ff0" },
+                      { label: "Awarded", value: totalAwarded, color: "#1D9E75" },
+                      { label: "Amount awarded", value: totalAmountAwarded > 0 ? `$${totalAmountAwarded.toLocaleString()}` : "—", color: "#1D9E75" },
+                      { label: "Pending", value: totalPending, color: "#EF9F27" },
+                    ].map(s => (
+                      <div key={s.label} className="card" style={{ padding: "14px 16px", margin: 0 }}>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: "'Syne', sans-serif" }}>{s.value}</div>
+                        <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {appsLoading && <div style={{ color: "#555", fontSize: 13, textAlign: "center", padding: 40 }}>Loading applications…</div>}
+
+                  {!appsLoading && applications.length === 0 && (
+                    <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
+                      <div style={{ fontSize: 32, marginBottom: 12 }}>▦</div>
+                      <div style={{ fontSize: 15, fontWeight: 500, color: "#d0cdc8", marginBottom: 8 }}>No applications yet</div>
+                      <div style={{ fontSize: 13, color: "#555", marginBottom: 20 }}>Start tracking your grant, loan, and contract applications to stay organized and never miss a deadline.</div>
+                      <button className="start-btn" style={{ maxWidth: 200 }} onClick={openAddApp}>+ Add your first application</button>
+                    </div>
+                  )}
+
+                  {!appsLoading && applications.length > 0 && (
+                    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+                      {applications.map((a, i) => {
+                        const sc = STATUS_COLORS[a.status] ?? { bg: "#33333a", color: "#666" };
+                        const typeColors: Record<string, { bg: string; color: string }> = {
+                          "Grant": { bg: "#1D9E7520", color: "#1D9E75" },
+                          "Loan": { bg: "#185FA520", color: "#378ADD" },
+                          "Gov Contract": { bg: "#7f77dd20", color: "#9b8ff0" },
+                        };
+                        const tc = typeColors[a.type] ?? { bg: "#33333a", color: "#777" };
+                        return (
+                          <div key={a.id} style={{ padding: "16px 18px", borderBottom: i < applications.length - 1 ? "1px solid #1a1a1e" : "none", display: "flex", alignItems: "flex-start", gap: 14 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                                <span style={{ fontSize: 14, fontWeight: 600, color: "#e0ddd8" }}>{a.programName}</span>
+                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 600, background: tc.bg, color: tc.color }}>{a.type}</span>
+                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 600, background: sc.bg, color: sc.color }}>{a.status}</span>
+                              </div>
+                              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "#666", marginBottom: a.notes ? 6 : 0 }}>
+                                {a.agency && <span>{a.agency}</span>}
+                                {a.amountRequested && <span style={{ color: "#9b8ff0" }}>{a.amountRequested}</span>}
+                                {a.deadline && <span>Due: {a.deadline}</span>}
+                              </div>
+                              {a.notes && <div style={{ fontSize: 12, color: "#555", marginTop: 4, fontStyle: "italic" }}>{a.notes}</div>}
+                            </div>
+                            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                              <button onClick={() => openEditApp(a)} style={{ background: "none", border: "1px solid #2a2a2e", color: "#777", borderRadius: 6, padding: "5px 12px", fontSize: 12, cursor: "pointer" }}>Edit</button>
+                              <button onClick={() => deleteApp(a.id)} style={{ background: "none", border: "1px solid #2a2a2e", color: "#E24B4A", borderRadius: 6, padding: "5px 12px", fontSize: 12, cursor: "pointer" }}>Delete</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {appModal.open && (
+                    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => { if (e.target === e.currentTarget) closeAppModal(); }}>
+                      <div style={{ background: "#13131a", border: "1px solid #2a2a2e", borderRadius: 16, padding: 28, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto" }}>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: "#e0ddd8", marginBottom: 20, fontFamily: "'Syne', sans-serif" }}>
+                          {appModal.editing ? "Edit application" : "Add application"}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                          <div>
+                            <label style={{ fontSize: 11, color: "#666", display: "block", marginBottom: 5 }}>Program name *</label>
+                            <input value={appForm.programName} onChange={e => setAppForm(f => ({ ...f, programName: e.target.value }))} placeholder="e.g. SBA Economic Injury Disaster Loan" style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13, boxSizing: "border-box" }} />
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <div>
+                              <label style={{ fontSize: 11, color: "#666", display: "block", marginBottom: 5 }}>Type</label>
+                              <select value={appForm.type} onChange={e => setAppForm(f => ({ ...f, type: e.target.value }))} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13 }}>
+                                {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11, color: "#666", display: "block", marginBottom: 5 }}>Status</label>
+                              <select value={appForm.status} onChange={e => setAppForm(f => ({ ...f, status: e.target.value }))} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13 }}>
+                                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <div>
+                              <label style={{ fontSize: 11, color: "#666", display: "block", marginBottom: 5 }}>Agency / Program</label>
+                              <input value={appForm.agency} onChange={e => setAppForm(f => ({ ...f, agency: e.target.value }))} placeholder="e.g. SBA, MDOT, NSF" style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13, boxSizing: "border-box" }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11, color: "#666", display: "block", marginBottom: 5 }}>Amount requested</label>
+                              <input value={appForm.amountRequested} onChange={e => setAppForm(f => ({ ...f, amountRequested: e.target.value }))} placeholder="e.g. $50,000" style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13, boxSizing: "border-box" }} />
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, color: "#666", display: "block", marginBottom: 5 }}>Deadline</label>
+                            <input value={appForm.deadline} onChange={e => setAppForm(f => ({ ...f, deadline: e.target.value }))} placeholder="e.g. June 30, 2026 or Rolling" style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13, boxSizing: "border-box" }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, color: "#666", display: "block", marginBottom: 5 }}>Notes</label>
+                            <textarea value={appForm.notes} onChange={e => setAppForm(f => ({ ...f, notes: e.target.value }))} placeholder="Requirements, contact info, next steps…" rows={3} style={{ width: "100%", background: "#1a1a1e", border: "1px solid #2a2a2e", borderRadius: 8, padding: "10px 12px", color: "#e0ddd8", fontSize: 13, resize: "vertical", boxSizing: "border-box" }} />
+                          </div>
+                          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
+                            <button onClick={closeAppModal} style={{ background: "none", border: "1px solid #2a2a2e", color: "#777", borderRadius: 8, padding: "10px 20px", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                            <button onClick={saveApp} disabled={!appForm.programName.trim()} style={{ background: "#7f77dd", border: "none", color: "#fff", borderRadius: 8, padding: "10px 24px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: appForm.programName.trim() ? 1 : 0.5 }}>{appModal.editing ? "Save changes" : "Add application"}</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
           </div>
         </div>

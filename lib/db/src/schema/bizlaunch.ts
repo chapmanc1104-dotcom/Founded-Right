@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
 
 export const profilesTable = pgTable("profiles", {
@@ -29,5 +29,20 @@ export const checklistsTable = pgTable("checklists", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const applicationsTable = pgTable("applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  programName: text("program_name").notNull(),
+  type: text("type").default("Grant"),
+  agency: text("agency").default(""),
+  amountRequested: text("amount_requested").default(""),
+  status: text("status").default("Researching"),
+  deadline: text("deadline").default(""),
+  notes: text("notes").default(""),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export type Profile = typeof profilesTable.$inferSelect;
 export type InsertProfile = typeof profilesTable.$inferInsert;
+export type Application = typeof applicationsTable.$inferSelect;
+export type InsertApplication = typeof applicationsTable.$inferInsert;
