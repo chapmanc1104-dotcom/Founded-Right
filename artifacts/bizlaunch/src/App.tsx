@@ -980,21 +980,23 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
             <div className="brand-name">Founded Right</div>
             <div className="brand-sub">{profile.businessName || "Business setup platform"}</div>
           </div>
-          {navItems.map(n => {
-            const showSection = n.section !== lastSection;
-            lastSection = n.section;
-            return (
-              <div key={n.id}>
-                {showSection && <div className="nav-section">{n.section}</div>}
-                <div className={`nav-item${screen === n.id ? " active" : ""}`} onClick={() => setScreen(n.id)}>
-                  <span className="nav-icon">{n.icon}</span>
-                  {n.label}
-                  {n.badge ? <span className="badge-nav">{n.badge}</span> : null}
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {navItems.map(n => {
+              const showSection = n.section !== lastSection;
+              lastSection = n.section;
+              return (
+                <div key={n.id}>
+                  {showSection && <div className="nav-section">{n.section}</div>}
+                  <div className={`nav-item${screen === n.id ? " active" : ""}`} onClick={() => setScreen(n.id)}>
+                    <span className="nav-icon">{n.icon}</span>
+                    {n.label}
+                    {n.badge ? <span className="badge-nav">{n.badge}</span> : null}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-          <div style={{ marginTop: "auto", borderTop: "1px solid #1a1a1e", padding: "14px 18px" }}>
+              );
+            })}
+          </div>
+          <div style={{ flexShrink: 0, borderTop: "1px solid #1a1a1e", padding: "14px 18px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#7f77dd22", border: "1px solid #7f77dd44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <span style={{ fontSize: 12, color: "#7f77dd", fontWeight: 700 }}>
