@@ -370,15 +370,30 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
+    // Check if we're on the /reset-password path before session loads
+    if (window.location.pathname.includes("/reset-password")) {
+      setIsPasswordRecovery(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      // Don't show dashboard if on the reset-password path
+      if (!window.location.pathname.includes("/reset-password")) {
+        setSession(session);
+      }
       setAuthLoading(false);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
+      if (event === "PASSWORD_RECOVERY") {
+        setIsPasswordRecovery(true);
+        setSession(session); // keep session so updateUser works
+      } else if (event === "SIGNED_OUT") {
+        setIsPasswordRecovery(false);
+        setSession(null);
+      } else {
+        if (!isPasswordRecovery) setSession(session);
+      }
       setAuthLoading(false);
-      if (event === "PASSWORD_RECOVERY") setIsPasswordRecovery(true);
-      if (event === "SIGNED_OUT") setIsPasswordRecovery(false);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -405,10 +420,22 @@ export default function App() {
     );
   }
 
+  // Always show reset screen if in password recovery mode, regardless of session state
+  if (isPasswordRecovery) {
+    return (
+      <ResetPasswordScreen
+        onDone={async () => {
+          await supabase.auth.signOut();
+          setIsPasswordRecovery(false);
+          setSession(null);
+          setAuthScreen("signin");
+          window.history.replaceState({}, "", "/");
+        }}
+      />
+    );
+  }
+
   if (!session) {
-    if (isPasswordRecovery) {
-      return <ResetPasswordScreen onDone={() => { setIsPasswordRecovery(false); setAuthScreen("signin"); }} />;
-    }
     return <AuthScreens mode={authScreen} setMode={setAuthScreen} />;
   }
 
@@ -447,7 +474,7 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
 
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault(); setError(""); setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
     if (error) setError(error.message);
     else setSuccess("Password reset link sent — check your email.");
     setLoading(false);
@@ -583,7 +610,7 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
             <div style={{ fontSize: 20, fontWeight: 700, color: "#e0ddd8", fontFamily: "'Syne',sans-serif", marginBottom: 6 }}>Set new password</div>
             <div style={{ fontSize: 13, color: "#555", marginBottom: 24 }}>Choose a strong password for your account</div>
             {success ? (
-              <div style={{ background: "#1D9E7518", border: "1px solid #1D9E7544", borderRadius: 8, padding: "14px", color: "#1D9E75", fontSize: 13, textAlign: "center" }}>Password updated! Signing you in…</div>
+              <div style={{ background: "#1D9E7518", border: "1px solid #1D9E7544", borderRadius: 8, padding: "14px", color: "#1D9E75", fontSize: 13, textAlign: "center" }}>Password updated! Redirecting to sign in…</div>
             ) : (
               <form onSubmit={handleReset}>
                 {error && <div style={{ background: "#E24B4A18", border: "1px solid #E24B4A44", borderRadius: 8, padding: "10px 14px", color: "#E24B4A", fontSize: 13, marginBottom: 16 }}>{error}</div>}
