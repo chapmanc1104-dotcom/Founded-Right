@@ -171,4 +171,15 @@ router.put("/checklist-state", async (req: Request, res: Response) => {
   res.json(current);
 });
 
+router.delete("/account", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+  await db.delete(checklistsTable).where(eq(checklistsTable.userId, userId));
+  await db.delete(profilesTable).where(eq(profilesTable.id, userId));
+  res.json({ ok: true });
+});
+
 export default router;

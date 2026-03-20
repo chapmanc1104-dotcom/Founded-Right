@@ -931,10 +931,27 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
   const [capDraft, setCapDraft] = useState<CapStatement | null>(null);
   const [capCopied, setCapCopied] = useState(false);
 
+  const [settingsTab, setSettingsTab] = useState<"profile" | "account">("profile");
+  const [settingsProfile, setSettingsProfile] = useState<Profile>({ ...defaultProfile });
+  const [settingsSave, setSettingsSave] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [pwForm, setPwForm] = useState({ current: "", newPw: "", confirm: "" });
+  const [pwSave, setPwSave] = useState<"idle" | "saving" | "saved" | string>("idle");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const authHeaders = () => ({ Authorization: `Bearer ${session.access_token}` });
 
   useEffect(() => { fetchProfile(); fetchChecklist(); fetchApplications(); }, []);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages, aiLoading]);
+  useEffect(() => {
+    if (screen === "settings") {
+      setSettingsProfile({ ...profile });
+      setSettingsSave("idle");
+      setPwForm({ current: "", newPw: "", confirm: "" });
+      setPwSave("idle");
+      setDeleteConfirm(false);
+    }
+  }, [screen]);
 
   async function fetchProfile() {
     try {
@@ -1144,6 +1161,49 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     } catch { /* ignore */ }
   }
 
+  async function saveSettingsProfile() {
+    setSettingsSave("saving");
+    try {
+      await saveProfile(settingsProfile);
+      setSettingsSave("saved");
+      setTimeout(() => setSettingsSave("idle"), 3500);
+    } catch {
+      setSettingsSave("error");
+    }
+  }
+
+  async function changePassword() {
+    if (!pwForm.newPw || !pwForm.confirm || !pwForm.current) {
+      setPwSave("Please fill in all password fields.");
+      return;
+    }
+    if (pwForm.newPw !== pwForm.confirm) {
+      setPwSave("New passwords do not match.");
+      return;
+    }
+    if (pwForm.newPw.length < 8) {
+      setPwSave("New password must be at least 8 characters.");
+      return;
+    }
+    setPwSave("saving");
+    const email = session.user.email ?? "";
+    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: pwForm.current });
+    if (signInErr) { setPwSave("Current password is incorrect."); return; }
+    const { error: updateErr } = await supabase.auth.updateUser({ password: pwForm.newPw });
+    if (updateErr) { setPwSave(updateErr.message); return; }
+    setPwSave("saved");
+    setPwForm({ current: "", newPw: "", confirm: "" });
+    setTimeout(() => setPwSave("idle"), 3500);
+  }
+
+  async function deleteAccount() {
+    setDeleteLoading(true);
+    try {
+      await fetch(`${API}/account`, { method: "DELETE", headers: authHeaders() });
+    } catch { /* ignore */ }
+    await supabase.auth.signOut();
+  }
+
   async function generateCapStatement() {
     setCapLoading(true); setCapEditing(false);
     try {
@@ -1251,6 +1311,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     { id: "livegrants", icon: "◎", label: "Live grants", section: "Funding" },
     { id: "tracker", icon: "▦", label: "App tracker", section: "Funding" },
     { id: "ai", icon: "✦", label: "AI assistant", section: "Support" },
+    { id: "settings", icon: "⚙", label: "Settings", section: "Support" },
   ];
 
   let lastSection = "";
@@ -2080,6 +2141,243 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                   )}
 
                   <div id="cap-print-area" style={{ display: "none" }} aria-hidden="true" />
+                </>
+              );
+            })()}
+
+            {screen === "settings" && (() => {
+              const sp = settingsProfile;
+              const setSp = (u: Partial<Profile>) => setSettingsProfile(prev => ({ ...prev, ...u }));
+              const toggleCert = (id: string) => setSp({ certifications: (sp.certifications || []).includes(id) ? (sp.certifications || []).filter((x: string) => x !== id) : [...(sp.certifications || []), id] });
+              const toggleGoal = (id: string) => setSp({ fundingGoals: (sp.fundingGoals || []).includes(id) ? (sp.fundingGoals || []).filter((x: string) => x !== id) : [...(sp.fundingGoals || []), id] });
+              const fieldInput: React.CSSProperties = { width: "100%", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "10px 12px", color: "#1E293B", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit" };
+              const fieldLabel: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, display: "block" };
+              const sectionTitle: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: "#1B3A6B", marginBottom: 14, marginTop: 20, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" };
+              return (
+                <>
+                  <div className="page-title">Settings</div>
+                  <div className="page-sub">Manage your business profile and account preferences</div>
+
+                  <div style={{ display: "flex", borderBottom: "1px solid #E2E8F0", marginBottom: 24, gap: 0 }}>
+                    {(["profile", "account"] as const).map(tab => (
+                      <button key={tab} onClick={() => setSettingsTab(tab)} style={{ padding: "10px 22px", background: "none", border: "none", borderBottom: `2px solid ${settingsTab === tab ? "#1B3A6B" : "transparent"}`, color: settingsTab === tab ? "#1B3A6B" : "#64748B", fontSize: 14, fontWeight: settingsTab === tab ? 700 : 400, cursor: "pointer", marginBottom: -1, textTransform: "capitalize" }}>
+                        {tab === "profile" ? "Profile" : "Account"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {settingsTab === "profile" && (
+                    <div style={{ maxWidth: 660 }}>
+                      <div style={sectionTitle}>Business information</div>
+
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={fieldLabel}>Business name</label>
+                        <input style={fieldInput} placeholder="e.g. Apex Solutions LLC" value={sp.businessName} onChange={e => setSp({ businessName: e.target.value })} />
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <label style={fieldLabel}>Entity type</label>
+                          <select style={fieldInput} value={sp.entityType} onChange={e => setSp({ entityType: e.target.value })}>
+                            {["LLC","S-Corp","C-Corp","Sole Proprietor","Nonprofit","Partnership"].map(o => <option key={o}>{o}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={fieldLabel}>State</label>
+                          <select style={fieldInput} value={sp.state} onChange={e => setSp({ state: e.target.value })}>
+                            {US_STATES.map(s => <option key={s}>{s}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={fieldLabel}>Industry</label>
+                        <select style={fieldInput} value={sp.industry} onChange={e => setSp({ industry: e.target.value })}>
+                          <option value="">Select an industry</option>
+                          {["Technology / Software","Consulting / Professional Services","Construction / Contracting","Healthcare / Medical","Retail / E-commerce","Food & Beverage","Manufacturing","Education / Training","Nonprofit / Social Impact","Other"].map(o => <option key={o}>{o}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <label style={fieldLabel}>Years in business</label>
+                          <select style={fieldInput} value={sp.yearsInBusiness} onChange={e => setSp({ yearsInBusiness: e.target.value })}>
+                            <option value="0">Less than 1 year</option>
+                            <option value="1">1 year</option>
+                            <option value="2">2 years</option>
+                            <option value="3">3–5 years</option>
+                            <option value="6">6–10 years</option>
+                            <option value="11">10+ years</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={fieldLabel}>Employees</label>
+                          <select style={fieldInput} value={sp.employees} onChange={e => setSp({ employees: e.target.value })}>
+                            <option value="1">Just me</option>
+                            <option value="2">2–5</option>
+                            <option value="6">6–10</option>
+                            <option value="11">11–50</option>
+                            <option value="51">50+</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={fieldLabel}>Annual revenue</label>
+                          <select style={fieldInput} value={sp.annualRevenue} onChange={e => setSp({ annualRevenue: e.target.value })}>
+                            <option value="0">Pre-revenue</option>
+                            <option value="50">Under $50K</option>
+                            <option value="100">$50K–$100K</option>
+                            <option value="250">$100K–$250K</option>
+                            <option value="500">$250K–$500K</option>
+                            <option value="1000">$500K–$1M</option>
+                            <option value="1001">Over $1M</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={fieldLabel}>Mission statement</label>
+                        <textarea style={{ ...fieldInput, resize: "vertical" } as React.CSSProperties} rows={3} placeholder="Describe your business's mission and goals…" value={sp.missionStatement} onChange={e => setSp({ missionStatement: e.target.value })} />
+                      </div>
+
+                      <div style={sectionTitle}>Owner information</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <label style={fieldLabel}>Owner / contact name</label>
+                          <input style={fieldInput} placeholder="Full name" value={sp.ownerName} onChange={e => setSp({ ownerName: e.target.value })} />
+                        </div>
+                        <div>
+                          <label style={fieldLabel}>Contact email</label>
+                          <input style={fieldInput} type="email" placeholder="email@company.com" value={sp.contactEmail} onChange={e => setSp({ contactEmail: e.target.value })} />
+                        </div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <label style={fieldLabel}>Phone number</label>
+                          <input style={fieldInput} type="tel" placeholder="(555) 000-0000" value={sp.contactPhone} onChange={e => setSp({ contactPhone: e.target.value })} />
+                        </div>
+                        <div>
+                          <label style={fieldLabel}>ZIP code</label>
+                          <input style={fieldInput} placeholder="e.g. 20001" value={sp.zipCode} onChange={e => setSp({ zipCode: e.target.value })} />
+                        </div>
+                      </div>
+
+                      <div style={sectionTitle}>Ownership characteristics &amp; certifications</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                        {CERT_OPTIONS.map(c => {
+                          const sel = (sp.certifications || []).includes(c.id);
+                          return (
+                            <div key={c.id} onClick={() => toggleCert(c.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: sel ? "#EFF4FF" : "#fff", border: `1px solid ${sel ? "#BFDBFE" : "#E2E8F0"}`, borderRadius: 8, cursor: "pointer", fontSize: 13, color: sel ? "#1B3A6B" : "#475569", transition: "all 0.15s" }}>
+                              <div style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${sel ? "#2D5BE3" : "#CBD5E1"}`, background: sel ? "#2D5BE3" : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, color: "white" }}>{sel ? "✓" : ""}</div>
+                              {c.label}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div style={sectionTitle}>Funding goals</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                        {GOAL_OPTIONS.map(g => {
+                          const sel = (sp.fundingGoals || []).includes(g.id);
+                          return (
+                            <div key={g.id} onClick={() => toggleGoal(g.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: sel ? "#EFF4FF" : "#fff", border: `1px solid ${sel ? "#BFDBFE" : "#E2E8F0"}`, borderRadius: 8, cursor: "pointer", fontSize: 13, color: sel ? "#1B3A6B" : "#475569", transition: "all 0.15s" }}>
+                              <div style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${sel ? "#2D5BE3" : "#CBD5E1"}`, background: sel ? "#2D5BE3" : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, color: "white" }}>{sel ? "✓" : ""}</div>
+                              {g.label}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ marginBottom: 24 }}>
+                        <label style={fieldLabel}>Target funding amount</label>
+                        <select style={fieldInput} value={sp.fundingAmount} onChange={e => setSp({ fundingAmount: e.target.value })}>
+                          <option value="">Not sure yet</option>
+                          <option value="under25">Under $25,000</option>
+                          <option value="25to100">$25,000 – $100,000</option>
+                          <option value="100to500">$100,000 – $500,000</option>
+                          <option value="500to1m">$500,000 – $1M</option>
+                          <option value="over1m">Over $1M</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 8, borderTop: "1px solid #F1F5F9" }}>
+                        <button onClick={saveSettingsProfile} disabled={settingsSave === "saving"} style={{ background: "#1B3A6B", color: "#fff", border: "none", borderRadius: 8, padding: "11px 28px", fontSize: 14, fontWeight: 600, cursor: settingsSave === "saving" ? "not-allowed" : "pointer", opacity: settingsSave === "saving" ? 0.7 : 1 }}>
+                          {settingsSave === "saving" ? "Saving…" : "Save changes"}
+                        </button>
+                        {settingsSave === "saved" && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#0D7A4E", fontSize: 13, fontWeight: 500 }}>
+                            <span style={{ fontSize: 16 }}>✓</span> Changes saved successfully
+                          </div>
+                        )}
+                        {settingsSave === "error" && (
+                          <div style={{ color: "#B91C1C", fontSize: 13 }}>Failed to save. Please try again.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {settingsTab === "account" && (
+                    <div style={{ maxWidth: 520 }}>
+                      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "20px 22px", marginBottom: 18 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1B3A6B", marginBottom: 14 }}>Login information</div>
+                        <div style={{ marginBottom: 4 }}>
+                          <label style={fieldLabel}>Email address</label>
+                          <input style={{ ...fieldInput, background: "#F1F5F9", color: "#64748B", cursor: "not-allowed" }} value={session.user.email ?? ""} readOnly />
+                          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>Your login email cannot be changed here.</div>
+                        </div>
+                      </div>
+
+                      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "20px 22px", marginBottom: 18 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1B3A6B", marginBottom: 14 }}>Change password</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                          <div>
+                            <label style={fieldLabel}>Current password</label>
+                            <input style={fieldInput} type="password" placeholder="Enter current password" value={pwForm.current} onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))} onKeyDown={e => e.key === "Enter" && changePassword()} />
+                          </div>
+                          <div>
+                            <label style={fieldLabel}>New password</label>
+                            <input style={fieldInput} type="password" placeholder="At least 8 characters" value={pwForm.newPw} onChange={e => setPwForm(f => ({ ...f, newPw: e.target.value }))} onKeyDown={e => e.key === "Enter" && changePassword()} />
+                          </div>
+                          <div>
+                            <label style={fieldLabel}>Confirm new password</label>
+                            <input style={fieldInput} type="password" placeholder="Repeat new password" value={pwForm.confirm} onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))} onKeyDown={e => e.key === "Enter" && changePassword()} />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 12 }}>
+                          <button onClick={changePassword} disabled={pwSave === "saving"} style={{ background: "#1B3A6B", color: "#fff", border: "none", borderRadius: 8, padding: "10px 22px", fontSize: 13, fontWeight: 600, cursor: pwSave === "saving" ? "not-allowed" : "pointer", opacity: pwSave === "saving" ? 0.7 : 1 }}>
+                            {pwSave === "saving" ? "Updating…" : "Update password"}
+                          </button>
+                          {pwSave === "saved" && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#0D7A4E", fontSize: 13, fontWeight: 500 }}>
+                              <span style={{ fontSize: 16 }}>✓</span> Password updated
+                            </div>
+                          )}
+                          {pwSave !== "idle" && pwSave !== "saving" && pwSave !== "saved" && (
+                            <div style={{ color: "#B91C1C", fontSize: 13 }}>{pwSave}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ background: "#FFF8F8", border: "1px solid #FECACA", borderRadius: 12, padding: "20px 22px" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", marginBottom: 6 }}>Delete account</div>
+                        <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, marginBottom: 14 }}>
+                          This will permanently delete all your business data, checklist progress, applications, and profile information. This action cannot be undone.
+                        </div>
+                        {!deleteConfirm ? (
+                          <button onClick={() => setDeleteConfirm(true)} style={{ background: "none", border: "1.5px solid #EF4444", color: "#DC2626", borderRadius: 8, padding: "9px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                            Delete my account
+                          </button>
+                        ) : (
+                          <div style={{ background: "#FEE2E2", borderRadius: 10, padding: "16px 18px" }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", marginBottom: 8 }}>Are you absolutely sure?</div>
+                            <div style={{ fontSize: 12, color: "#7F1D1D", marginBottom: 14 }}>Type "delete" to confirm. All your data will be permanently removed.</div>
+                            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                              <button onClick={deleteAccount} disabled={deleteLoading} style={{ background: "#DC2626", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontSize: 13, fontWeight: 700, cursor: deleteLoading ? "not-allowed" : "pointer", opacity: deleteLoading ? 0.7 : 1 }}>
+                                {deleteLoading ? "Deleting…" : "Yes, delete everything"}
+                              </button>
+                              <button onClick={() => setDeleteConfirm(false)} style={{ background: "none", border: "1px solid #CBD5E1", color: "#475569", borderRadius: 8, padding: "9px 18px", fontSize: 13, cursor: "pointer" }}>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </>
               );
             })()}
