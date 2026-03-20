@@ -994,8 +994,25 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               </div>
             );
           })}
-          <div style={{ marginTop: "auto", padding: "12px 18px", borderTop: "1px solid #1a1a1e" }}>
-            <button className="reset-btn" onClick={onLogout} style={{ width: "100%" }}>Sign out</button>
+          <div style={{ marginTop: "auto", borderTop: "1px solid #1a1a1e", padding: "14px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#7f77dd22", border: "1px solid #7f77dd44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 12, color: "#7f77dd", fontWeight: 700 }}>
+                  {(session.user.email?.[0] ?? "?").toUpperCase()}
+                </span>
+              </div>
+              <span style={{ fontSize: 11, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={session.user.email ?? ""}>
+                {session.user.email}
+              </span>
+            </div>
+            <button
+              onClick={onLogout}
+              style={{ width: "100%", background: "transparent", border: "1px solid #2a2a2e", borderRadius: 8, padding: "8px 12px", color: "#888", fontSize: 13, cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}
+              onMouseEnter={e => { (e.target as HTMLButtonElement).style.borderColor = "#E24B4A66"; (e.target as HTMLButtonElement).style.color = "#E24B4A"; }}
+              onMouseLeave={e => { (e.target as HTMLButtonElement).style.borderColor = "#2a2a2e"; (e.target as HTMLButtonElement).style.color = "#888"; }}
+            >
+              Sign out
+            </button>
           </div>
         </div>
 
