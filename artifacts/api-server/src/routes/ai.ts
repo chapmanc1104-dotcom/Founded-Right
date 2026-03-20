@@ -1,11 +1,9 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import Anthropic from "@anthropic-ai/sdk";
+import { anthropic } from "@workspace/integrations-anthropic-ai";
 
 const router: IRouter = Router();
 
-function getClient() {
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-}
+const MODEL = "claude-haiku-4-5";
 
 router.post("/ai/chat", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {
@@ -20,18 +18,17 @@ router.post("/ai/chat", async (req: Request, res: Response) => {
   }
 
   try {
-    const client = getClient();
-    const messages: Anthropic.MessageParam[] = [
+    const messages = [
       ...(history || []).map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
-      { role: "user", content: message },
+      { role: "user" as const, content: message },
     ];
 
-    const response = await client.messages.create({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 1024,
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
       system: systemPrompt || "You are BizLaunch Assistant, an expert business setup advisor helping small business owners structure their companies for grants, loans, and government contracts. Be concise, specific, and actionable. Keep answers under 200 words unless the question requires more.",
       messages,
     });
@@ -57,7 +54,6 @@ router.post("/ai/naics", async (req: Request, res: Response) => {
   }
 
   try {
-    const client = getClient();
     const prompt = `A small business owner describes their business as: "${query}". Industry: ${industry || "not specified"}.
 
 Return exactly 5 NAICS code suggestions as a JSON array. Each object must have:
@@ -69,9 +65,9 @@ Return exactly 5 NAICS code suggestions as a JSON array. Each object must have:
 
 Return only valid JSON array, no markdown, no explanation.`;
 
-    const response = await client.messages.create({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 2048,
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -102,7 +98,6 @@ router.post("/ai/grants", async (req: Request, res: Response) => {
   }
 
   try {
-    const client = getClient();
     const prompt = `A small business owner has the following profile:
 - Business: ${profile.businessName || "unnamed"}
 - Industry: ${profile.industry || "not specified"}
@@ -130,9 +125,9 @@ Return 8 real funding opportunities as a JSON array. Each object must have:
 
 Focus on real federal and state programs. Include SBIR/STTR if tech-related, SBA loans, state grants, and set-aside contracts. Return only valid JSON array.`;
 
-    const response = await client.messages.create({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 4096,
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
 
