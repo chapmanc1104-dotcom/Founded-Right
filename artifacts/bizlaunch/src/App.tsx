@@ -616,6 +616,19 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     } catch { /* ignore */ }
   }
 
+  async function quickUpdateStatus(id: string, status: string) {
+    const app = applications.find(a => a.id === id);
+    if (!app) return;
+    setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    try {
+      await fetch(`${API}/applications/${id}`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...app, status }),
+      });
+    } catch { /* ignore */ }
+  }
+
   const score = getScore(checklist), done = getDone(checklist), total = getTotal();
   const urgent = SECTIONS.flatMap(s => s.items.filter(i => i.tags.includes("required") && !checklist[i.id]));
 
@@ -1272,7 +1285,13 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
                                 <span style={{ fontSize: 14, fontWeight: 600, color: "#e0ddd8" }}>{a.programName}</span>
                                 <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 600, background: tc.bg, color: tc.color }}>{a.type}</span>
-                                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 600, background: sc.bg, color: sc.color }}>{a.status}</span>
+                                <select
+                                  value={a.status}
+                                  onChange={e => quickUpdateStatus(a.id, e.target.value)}
+                                  style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 99, background: sc.bg, color: sc.color, border: `1px solid ${sc.color}44`, cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}
+                                >
+                                  {STATUSES.map(s => <option key={s} value={s} style={{ background: "#13131a", color: "#e0ddd8" }}>{s}</option>)}
+                                </select>
                               </div>
                               <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "#666", marginBottom: a.notes ? 6 : 0 }}>
                                 {a.agency && <span>{a.agency}</span>}
