@@ -422,90 +422,88 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
     <div className="min-h-screen bg-white text-slate-800" style={{ fontFamily: "Inter, sans-serif" }}>
 
       {/* STICKY NAV */}
-      <nav className="fixed top-0 left-0 right-0 h-20 bg-white/95 backdrop-blur-md border-b border-slate-200 z-50 flex items-center shadow-sm transition-all">
-        <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center">
+      <nav className="fixed top-0 left-0 right-0 h-16 md:h-20 bg-white/95 backdrop-blur-md border-b border-slate-200 z-50 flex items-center shadow-sm transition-all">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 flex justify-between items-center">
           <div className="flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity">
-            <FoundedRightLogo variant="full" height={30} />
+            <FoundedRightLogo variant="full" height={26} />
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             <button
               onClick={onSignIn}
-              className="text-[#1B3A6B] font-semibold hover:text-[#2D5BE3] transition-colors flex items-center gap-1 group"
+              className="hidden sm:flex text-[#1B3A6B] font-semibold hover:text-[#2D5BE3] transition-colors items-center gap-1 group"
             >
               Sign in <ArrowRight className="w-4 h-4 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-1 transition-all" />
             </button>
             <button
               onClick={onSignUp}
-              className="bg-[#C9A84C] hover:bg-[#D4B663] text-[#1B3A6B] hover:shadow-lg font-bold px-6 py-2.5 rounded-md transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
+              className="bg-[#C9A84C] hover:bg-[#D4B663] text-[#1B3A6B] hover:shadow-lg font-bold px-4 py-2 md:px-6 md:py-2.5 rounded-md transition-all flex items-center gap-1.5 text-sm md:text-base whitespace-nowrap transform hover:-translate-y-0.5"
               style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
             >
-              Sign up free <ArrowRight className="w-4 h-4" />
+              Sign up free <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
           </div>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="relative pt-36 pb-32 px-6 flex flex-col items-center justify-center min-h-[90vh] text-center bg-gradient-to-b from-slate-50 to-white">
-        <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#EFF6FF] text-[#1B3A6B] font-semibold text-sm mb-8 border border-blue-100"
-          >
-            <span className="relative flex h-2.5 w-2.5">
+      <section className="relative pt-28 pb-20 md:pt-36 md:pb-32 px-5 md:px-6 flex flex-col items-center justify-center min-h-[85vh] md:min-h-[90vh] text-center bg-gradient-to-b from-slate-50 to-white">
+        <div className="max-w-4xl mx-auto flex flex-col items-center w-full">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-[#EFF6FF] text-[#1B3A6B] font-semibold text-xs md:text-sm mb-6 md:mb-8 border border-blue-100">
+            <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5 flex-shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C9A84C] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#C9A84C]"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 md:h-2.5 md:w-2.5 bg-[#C9A84C]"></span>
             </span>
-            Business setup platform for LLC owners <ArrowRight className="w-3.5 h-3.5" />
+            Business setup platform for LLC owners <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" />
           </div>
 
-          <h1 className="text-5xl font-extrabold text-[#1B3A6B] tracking-tight leading-[1.1] mb-8" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "clamp(2.5rem, 6vw, 4.5rem)" }}>
+          <h1 className="font-extrabold text-[#1B3A6B] tracking-tight leading-[1.1] mb-6 md:mb-8" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "clamp(2.2rem, 8vw, 4.5rem)" }}>
             Stop guessing <br />what to do next.
           </h1>
 
-          <p className="text-xl text-slate-600 max-w-3xl mb-12 leading-relaxed">
+          <p className="text-base md:text-xl text-slate-600 max-w-2xl mb-8 md:mb-12 leading-relaxed px-2">
             FoundedRight walks you step by step through everything your LLC needs to get funded, win government contracts, and build a professional presence — all in one place.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 items-center justify-center w-full max-w-sm sm:max-w-none">
             <button
               onClick={onSignUp}
-              className="group flex items-center justify-center gap-2 bg-[#1B3A6B] hover:bg-[#2D5BE3] text-white font-bold rounded-lg transition-all hover:shadow-[0_8px_30px_rgb(27,58,107,0.3)] transform hover:-translate-y-1"
-              style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 56, width: 200 }}
+              className="group flex items-center justify-center gap-2 bg-[#1B3A6B] hover:bg-[#2D5BE3] text-white font-bold rounded-lg transition-all hover:shadow-[0_8px_30px_rgb(27,58,107,0.3)] transform hover:-translate-y-1 w-full sm:w-auto"
+              style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 52, minWidth: 180 }}
             >
               Sign up free
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button
               onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
-              className="group flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-[#1B3A6B] font-bold rounded-lg transition-all hover:shadow-md border-2 border-[#1B3A6B]"
-              style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 56, width: 200 }}
+              className="group flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-[#1B3A6B] font-bold rounded-lg transition-all hover:shadow-md border-2 border-[#1B3A6B] w-full sm:w-auto"
+              style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 52, minWidth: 180 }}
             >
               See how it works
               <ArrowDown className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
             </button>
           </div>
-          <p className="mt-4 text-sm text-slate-500 font-medium flex items-center gap-1">
-            <CheckCircle2 className="w-4 h-4 text-green-500" /> No credit card required to start
+          <p className="mt-4 text-sm text-slate-500 font-medium flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> No credit card required to start
           </p>
         </div>
 
         <div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer group"
+          className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 cursor-pointer group"
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
         >
           <span className="text-xs font-semibold text-slate-400 group-hover:text-[#1B3A6B] transition-colors uppercase tracking-widest">Scroll</span>
-          <ChevronDown className="w-6 h-6 text-slate-400 group-hover:text-[#1B3A6B] animate-bounce transition-colors" />
+          <ChevronDown className="w-5 h-5 md:w-6 md:h-6 text-slate-400 group-hover:text-[#1B3A6B] animate-bounce transition-colors" />
         </div>
       </section>
 
       {/* PROBLEM */}
-      <section className="py-24 px-6 bg-white border-y border-slate-100 relative">
+      <section className="py-14 md:py-24 px-5 md:px-6 bg-white border-y border-slate-100 relative">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-16">
-            <h2 className="text-4xl font-bold text-[#1B3A6B] mb-6" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>Why most LLCs stay stuck.</h2>
-            <div className="w-24 h-1.5 bg-[#C9A84C] rounded-full"></div>
+          <div className="mb-10 md:mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#1B3A6B] mb-4 md:mb-6" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>Why most LLCs stay stuck.</h2>
+            <div className="w-20 md:w-24 h-1.5 bg-[#C9A84C] rounded-full"></div>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-5 md:gap-8">
             {[
               { num: "01", title: "You don't know which steps actually matter for funding", desc: "There are hundreds of things you could do. Most don't move the needle. Knowing the right 46 steps — in the right order — changes everything.", icon: <Target className="w-6 h-6 text-[#1B3A6B]" /> },
               { num: "02", title: "Grant and loan applications keep getting rejected or ignored", desc: "It's not just what you apply for — it's how ready your business looks on paper. Most rejections happen before anyone reads your application.", icon: <ShieldAlert className="w-6 h-6 text-[#1B3A6B]" /> },
@@ -534,13 +532,13 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
       </section>
 
       {/* FEATURES */}
-      <section className="py-24 px-6 bg-slate-50">
+      <section className="py-14 md:py-24 px-5 md:px-6 bg-slate-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#1B3A6B] mb-6" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>Everything you need, structured perfectly.</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">One platform built specifically for new LLC owners who want to get funded, get contracts, and get taken seriously.</p>
+          <div className="text-center mb-10 md:mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#1B3A6B] mb-4 md:mb-6" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>Everything you need, structured perfectly.</h2>
+            <p className="text-base md:text-xl text-slate-600 max-w-2xl mx-auto">One platform built specifically for new LLC owners who want to get funded, get contracts, and get taken seriously.</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[
               { title: "Personalized Setup Checklist", desc: "46 precise steps across 8 categories — legal, banking, credit, federal registrations, presence, and more.", icon: <CheckCircle2 className="w-5 h-5" /> },
               { title: "AI-Matched Funding", desc: "Grants, loans, and contracts matched to your industry, stage, and location. Know what you're ready for.", icon: <TrendingUp className="w-5 h-5" /> },
@@ -568,9 +566,9 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
       </section>
 
       {/* STATS */}
-      <section className="py-24 px-6 bg-white">
+      <section className="py-14 md:py-24 px-5 md:px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-12 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+          <div className="grid md:grid-cols-3 gap-8 md:gap-12 divide-y md:divide-y-0 md:divide-x divide-slate-200">
             {[
               { stat: "5.5M", label: "New businesses formed in 2023", context: "Competition is fierce." },
               { stat: "21.6M", label: "Active LLCs in the US", context: "You need to stand out." },
@@ -589,46 +587,46 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
       </section>
 
       {/* FINAL CTA */}
-      <section className="py-32 px-6 bg-[#1B3A6B] relative overflow-hidden">
+      <section className="py-20 md:py-32 px-5 md:px-6 bg-[#1B3A6B] relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
           <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-white blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#C9A84C] blur-3xl"></div>
         </div>
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
-          <h2 className="text-4xl font-bold text-white mb-6 leading-tight" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "clamp(2rem, 4vw, 3rem)" }}>
+          <h2 className="font-bold text-white mb-4 md:mb-6 leading-tight" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "clamp(1.8rem, 5vw, 3rem)" }}>
             Your LLC deserves a real foundation.
           </h2>
-          <p className="text-xl text-blue-100 mb-12 max-w-2xl">
+          <p className="text-base md:text-xl text-blue-100 mb-8 md:mb-12 max-w-2xl">
             Join thousands of business owners who are getting structured, getting funded, and getting contracts.
           </p>
           <button
             onClick={onSignUp}
-            className="group w-full max-w-[600px] bg-[#C9A84C] hover:bg-[#D4B663] text-[#1B3A6B] text-xl font-bold rounded-xl transition-all hover:shadow-[0_0_40px_rgba(201,168,76,0.4)] flex items-center justify-center gap-3 transform hover:-translate-y-1"
-            style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 64 }}
+            className="group w-full max-w-[600px] bg-[#C9A84C] hover:bg-[#D4B663] text-[#1B3A6B] text-lg md:text-xl font-bold rounded-xl transition-all hover:shadow-[0_0_40px_rgba(201,168,76,0.4)] flex items-center justify-center gap-3 transform hover:-translate-y-1"
+            style={{ fontFamily: "Plus Jakarta Sans, sans-serif", height: 58 }}
           >
             Sign up free
-            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+            <ArrowRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-2 transition-transform" />
           </button>
-          <div className="mt-6 font-medium text-blue-200 flex items-center justify-center gap-3">
+          <div className="mt-5 text-sm md:text-base font-medium text-blue-200 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             <span>No credit card required</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A84C]"></span>
+            <span className="w-1 h-1 rounded-full bg-[#C9A84C] hidden sm:inline-block"></span>
             <span>Free forever plan</span>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="py-12 px-6 bg-slate-900 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="py-8 md:py-12 px-5 md:px-6 bg-slate-900 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-5 md:flex-row md:justify-between">
           <div className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-            <FoundedRightLogo variant="sidebar" height={28} />
+            <FoundedRightLogo variant="sidebar" height={26} />
           </div>
-          <div className="text-slate-400 text-sm flex items-center gap-4">
+          <div className="text-slate-400 text-sm flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <button className="hover:text-white transition-colors" onClick={() => {}}>Privacy Policy</button>
             <button className="hover:text-white transition-colors" onClick={() => {}}>Terms of Service</button>
             <button className="hover:text-white transition-colors" onClick={() => {}}>Contact</button>
-            <span>© {new Date().getFullYear()} FoundedRight. All rights reserved.</span>
           </div>
+          <span className="text-slate-500 text-xs md:text-sm text-center">© {new Date().getFullYear()} FoundedRight. All rights reserved.</span>
         </div>
       </footer>
 
