@@ -229,7 +229,7 @@ const css = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
-body { font-family: 'Inter', sans-serif; background: #F7F8FA; color: #0F172A; }
+body { font-family: 'Inter', sans-serif; background: #F7F8FA; color: #0F172A; overflow-x: hidden; }
 ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: #F1F5F9; } ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
 button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 input, textarea, select { font-family: inherit; outline: none; border: none; background: none; color: inherit; }
@@ -334,6 +334,28 @@ input, textarea, select { font-family: inherit; outline: none; border: none; bac
 .reset-btn { font-size: 11px; color: #64748B; background: none; padding: 8px 12px; border-radius: 6px; border: 1px solid #E2E8F0; }
 .reset-btn:hover { color: #1B3A6B; border-color: #CBD5E1; }
 .landing { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #F7F8FA; padding: 40px 20px; }
+.mobile-header { display: none; }
+.mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 98; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.mobile-overlay.open { opacity: 1; pointer-events: auto; }
+.hamburger { background: none; border: none; cursor: pointer; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+.hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.2s; }
+@media (max-width: 767px) {
+  .app { flex-direction: column; height: 100dvh; overflow: hidden; }
+  .sidebar { position: fixed; top: 0; left: 0; height: 100%; z-index: 99; width: 260px; transform: translateX(-100%); transition: transform 0.25s ease; }
+  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.25); }
+  .mobile-header { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 52px; background: #1B3A6B; flex-shrink: 0; z-index: 50; }
+  .mobile-overlay { display: block; }
+  .main { flex: 1; overflow-y: auto; min-height: 0; }
+  .page { padding: 14px 14px 80px; max-width: 100%; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .two-col { grid-template-columns: 1fr; gap: 12px; }
+  .doc-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .page-title { font-size: 18px; }
+  .card { padding: 14px 16px; }
+  .section-header { padding: 12px 14px; }
+  .section-body { padding: 0 14px; }
+  .chat-messages { min-height: 240px; max-height: 320px; }
+}
 @media print {
   body * { visibility: hidden !important; }
   #cap-statement-print, #cap-statement-print * { visibility: visible !important; }
@@ -1005,6 +1027,7 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
   const [grantsFetched, setGrantsFetched] = useState(false);
   const [liveGrantFilter, setLiveGrantFilter] = useState("all");
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   type AppEntry = { id: string; programName: string; type: string; agency: string; amountRequested: string; status: string; deadline: string; notes: string; };
   const emptyAppForm = { programName: "", type: "Grant", agency: "", amountRequested: "", status: "Researching", deadline: "", notes: "" };
@@ -1409,7 +1432,14 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
     <>
       <style>{css}</style>
       <div className="app">
-        <div className="sidebar">
+        <div className={`mobile-header`}>
+          <FoundedRightLogo variant="sidebar" height={24} />
+          <button className="hamburger" onClick={() => setMobileMenuOpen(v => !v)} aria-label="Open menu">
+            <span /><span /><span />
+          </button>
+        </div>
+        <div className={`mobile-overlay${mobileMenuOpen ? " open" : ""}`} onClick={() => setMobileMenuOpen(false)} />
+        <div className={`sidebar${mobileMenuOpen ? " open" : ""}`}>
           <div className="brand">
             <FoundedRightLogo variant="sidebar" height={30} />
             <div className="brand-sub" style={{ marginTop: 6 }}>{profile.businessName || "Business setup platform"}</div>
@@ -1421,7 +1451,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               return (
                 <div key={n.id}>
                   {showSection && <div className="nav-section">{n.section}</div>}
-                  <div className={`nav-item${screen === n.id ? " active" : ""}`} onClick={() => setScreen(n.id)}>
+                  <div className={`nav-item${screen === n.id ? " active" : ""}`} onClick={() => { setScreen(n.id); setMobileMenuOpen(false); }}>
                     <span className="nav-icon">{n.icon}</span>
                     {n.label}
                     {n.badge ? <span className="badge-nav">{n.badge}</span> : null}
