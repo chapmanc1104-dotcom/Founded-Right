@@ -799,8 +799,17 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault(); setError(""); setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("fetch") || msg.includes("network") || msg.includes("Network")) {
+        setError("Network error: unable to reach the authentication server. Please check your internet connection and try again.");
+      } else {
+        setError(msg || "An unexpected error occurred. Please try again.");
+      }
+    }
     setLoading(false);
   }
 
