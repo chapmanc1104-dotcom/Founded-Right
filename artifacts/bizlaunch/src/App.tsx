@@ -836,7 +836,7 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
     setError(""); setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: "https://foundedright.co" },
+      options: { redirectTo: window.location.origin },
     });
     if (error) { setError(error.message); setLoading(false); }
   }
