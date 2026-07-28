@@ -12,7 +12,7 @@ const SECTIONS = [
       { id: "articles", label: "Articles of Organization filed & accepted", note: "Keep a certified copy — lenders and grant apps will request it.", tags: ["required"] },
       { id: "ein", label: "Obtain EIN from the IRS", note: "Free at irs.gov. Required for all banking, taxes, and funding applications.", tags: ["required"] },
       { id: "opagree", label: "Draft and sign an Operating Agreement", note: "Proves governance structure to lenders and investors.", tags: ["required"] },
-      { id: "boi", label: "Check BOI reporting status (FinCEN)", note: "Since FinCEN's March 2025 rule, U.S.-formed LLCs are exempt from BOI reporting — only foreign-formed entities registered in the U.S. must file. Rules can change; verify at fincen.gov/boi." },
+      { id: "boi", label: "Check BOI reporting status (FinCEN)", note: "Since FinCEN's March 2025 rule, U.S.-formed LLCs are exempt from BOI reporting — only foreign-formed entities registered in the U.S. must file. Rules can change; verify at fincen.gov/boi.", tags: [] },
       { id: "licenses", label: "Obtain required business licenses & permits", note: "Check federal, state, county, and city requirements for your industry.", tags: ["required"] },
       { id: "regagent", label: "Update registered agent address", note: "Remove personal home address from all public filings.", tags: ["required"] },
     ]
