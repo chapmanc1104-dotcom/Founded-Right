@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { NAICS_2022 } from "../data/naics2022";
 
 const router: IRouter = Router();
 
@@ -70,7 +71,7 @@ router.post("/ai/naics", async (req: Request, res: Response) => {
   }
 
   try {
-    const prompt = `A small business owner describes their business as: "${query}". Industry: ${industry || "not specified"}.
+    const buildPrompt = (extra: string) => `A small business owner describes their business as: "${query}". Industry: ${industry || "not specified"}.
 
 Return exactly 5 NAICS code suggestions as a raw JSON array (no markdown, no code fences). Each object must have exactly these fields:
 - "code": 6-digit NAICS code as a string (e.g. "541512")
@@ -79,22 +80,62 @@ Return exactly 5 NAICS code suggestions as a raw JSON array (no markdown, no cod
 - "relevance": exactly one of "primary", "secondary", or "related"
 - "govContractTip": one specific tip about using this code to win government contracts
 
+CRITICAL: use only codes that exist in the official 2022 NAICS classification. Do NOT use codes retired in earlier revisions (for example 541712 was retired). ${extra}
+
 Output ONLY the JSON array, starting with [ and ending with ]. No explanation, no markdown.`;
 
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 8192,
-      messages: [{ role: "user", content: prompt }],
-    });
+    type NaicsSuggestion = { code?: unknown; title?: unknown; [k: string]: unknown };
 
-    const text = response.content[0].type === "text" ? response.content[0].text : "[]";
-    let codes;
-    try {
-      codes = JSON.parse(extractJson(text));
-    } catch {
-      codes = [];
+    // Validate AI output against the official 2022 NAICS table:
+    // drop invalid/retired codes and always use the official title.
+    const validate = (raw: unknown): Record<string, unknown>[] => {
+      if (!Array.isArray(raw)) return [];
+      const seen = new Set<string>();
+      const valid: Record<string, unknown>[] = [];
+      for (const item of raw as NaicsSuggestion[]) {
+        const code = typeof item?.code === "string" ? item.code.trim() : "";
+        const officialTitle = NAICS_2022[code];
+        if (!officialTitle || seen.has(code)) continue;
+        seen.add(code);
+        valid.push({ ...item, code, title: officialTitle });
+      }
+      return valid;
+    };
+
+    const ask = async (extra: string) => {
+      const response = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 8192,
+        messages: [{ role: "user", content: buildPrompt(extra) }],
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "[]";
+      try {
+        return JSON.parse(extractJson(text));
+      } catch {
+        return [];
+      }
+    };
+
+    let codes = validate(await ask(""));
+    // If validation rejected too many suggestions, retry once telling the model what was invalid.
+    if (codes.length < 3) {
+      const kept = codes.map((c) => c.code).join(", ") || "none";
+      const retry = validate(
+        await ask(
+          `A previous attempt returned codes that do not exist in the 2022 NAICS classification (only these were valid: ${kept}). Double-check every code is a real 2022 NAICS 6-digit code.`,
+        ),
+      );
+      const seen = new Set(codes.map((c) => c.code as string));
+      for (const c of retry) {
+        if (!seen.has(c.code as string)) {
+          codes.push(c);
+          seen.add(c.code as string);
+        }
+      }
+      codes = codes.slice(0, 5);
     }
-    res.json({ codes: Array.isArray(codes) ? codes : [] });
+
+    res.json({ codes });
   } catch (err: unknown) {
     req.log.error({ err }, "NAICS AI error");
     res.status(500).json({ error: "AI service unavailable" });

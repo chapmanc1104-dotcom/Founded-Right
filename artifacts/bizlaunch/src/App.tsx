@@ -12,7 +12,7 @@ const SECTIONS = [
       { id: "articles", label: "Articles of Organization filed & accepted", note: "Keep a certified copy — lenders and grant apps will request it.", tags: ["required"] },
       { id: "ein", label: "Obtain EIN from the IRS", note: "Free at irs.gov. Required for all banking, taxes, and funding applications.", tags: ["required"] },
       { id: "opagree", label: "Draft and sign an Operating Agreement", note: "Proves governance structure to lenders and investors.", tags: ["required"] },
-      { id: "boi", label: "File BOI report with FinCEN", note: "Required under the Corporate Transparency Act for most new LLCs.", tags: ["required"] },
+      { id: "boi", label: "Check BOI reporting status (FinCEN)", note: "Since FinCEN's March 2025 rule, U.S.-formed LLCs are exempt from BOI reporting — only foreign-formed entities registered in the U.S. must file. Rules can change; verify at fincen.gov/boi." },
       { id: "licenses", label: "Obtain required business licenses & permits", note: "Check federal, state, county, and city requirements for your industry.", tags: ["required"] },
       { id: "regagent", label: "Update registered agent address", note: "Remove personal home address from all public filings.", tags: ["required"] },
     ]
@@ -594,7 +594,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
             {[
               { stat: "5.5M", label: "New businesses formed in 2023", context: "Competition is fierce." },
               { stat: "21.6M", label: "Active LLCs in the US", context: "You need to stand out." },
-              { stat: "Billions", label: "In federal grants go unclaimed", context: "Because businesses aren't ready." },
+              { stat: "23%", label: "Of federal contract dollars are set aside for small businesses", context: "But only if you're registered and ready." },
             ].map((item, i) => (
               <div key={i} className="pt-8 md:pt-0 md:px-12 flex flex-col items-center text-center group">
                 <div className="font-black text-[#1B3A6B] mb-4 group-hover:scale-110 transition-transform duration-300" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "3rem" }}>{item.stat}</div>
@@ -619,7 +619,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
             Your LLC deserves a real foundation.
           </h2>
           <p className="text-base md:text-xl text-blue-100 mb-8 md:mb-12 max-w-2xl">
-            Join thousands of business owners who are getting structured, getting funded, and getting contracts.
+            Get structured, get funded, and get contracts — with every step laid out in the right order.
           </p>
           <button
             onClick={onSignUp}
@@ -1969,7 +1969,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                 <div className="page-title">AI assistant</div>
                 <div className="page-sub">Ask anything about your business setup, funding, certifications, and strategy</div>
                 <div className="chips">
-                  {["What steps should I prioritize this week?", "What grants am I eligible for right now?", "How do I file my BOI report with FinCEN?", "Explain SAM.gov registration step by step", "What certifications should I apply for?", "How do I build business credit fast?"].map(p => (
+                  {["What steps should I prioritize this week?", "What grants am I eligible for right now?", "Do I need to file a BOI report with FinCEN?", "Explain SAM.gov registration step by step", "What certifications should I apply for?", "How do I build business credit fast?"].map(p => (
                     <button key={p} className="chip" onClick={() => sendChat(p)}>{p}</button>
                   ))}
                 </div>
