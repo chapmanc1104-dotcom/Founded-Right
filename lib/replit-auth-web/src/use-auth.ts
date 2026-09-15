@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import type { AuthUser } from "@workspace/api-client-react";
+import type { GetCurrentAuthUserResponseUser } from "@workspace/api-client-react";
 
-export type { AuthUser };
+/** The authenticated user shape returned by GET /api/auth/user. */
+export type AuthUser = GetCurrentAuthUserResponseUser;
 
 interface AuthState {
   user: AuthUser | null;

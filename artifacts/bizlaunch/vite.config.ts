@@ -26,6 +26,17 @@ if (!basePath) {
   );
 }
 
+// Auth credentials are inlined at build time. Missing values used to compile to
+// empty strings and fail at runtime as a blank page, so fail the build instead.
+const supabaseUrl = process.env.VITE_SUPABASE_URL ?? "";
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY ?? "";
+
+if (process.env.NODE_ENV === "production" && (!supabaseUrl || !supabaseAnonKey)) {
+  throw new Error(
+    "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required for a production build.",
+  );
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -47,8 +58,8 @@ export default defineConfig({
       : []),
   ],
   define: {
-    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.VITE_SUPABASE_URL ?? ""),
-    "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY ?? ""),
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
+    "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(supabaseAnonKey),
   },
   resolve: {
     alias: {

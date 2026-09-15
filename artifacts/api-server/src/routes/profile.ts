@@ -1,7 +1,15 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { profilesTable, checklistsTable } from "@workspace/db";
+import {
+  profilesTable,
+  checklistsTable,
+  applicationsTable,
+  usersTable,
+} from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { LIMITS, clampText, clampStringArray } from "../lib/sanitize";
+import { CHECKLIST_LABELS } from "../data/checklist";
 
 const router: IRouter = Router();
 
@@ -56,26 +64,40 @@ router.put("/profile", async (req: Request, res: Response) => {
     return;
   }
   const userId = req.user.id;
-  const body = req.body;
+  const body = req.body ?? {};
+
+  // Every field is length-capped before it is stored, since these values are
+  // later interpolated into model prompts and rendered back to the user.
+  const text = (v: unknown, max: number = LIMITS.profileField) => clampText(v, max);
 
   const updateData: Record<string, unknown> = {};
-  if (body.businessName !== undefined) updateData.businessName = body.businessName;
-  if (body.onboarded !== undefined) updateData.onboarded = body.onboarded;
-  if (body.entityType !== undefined) updateData.entityType = body.entityType;
-  if (body.state !== undefined) updateData.state = body.state;
-  if (body.industry !== undefined) updateData.industry = body.industry;
-  if (body.ownerName !== undefined) updateData.ownerName = body.ownerName;
-  if (body.contactEmail !== undefined) updateData.contactEmail = body.contactEmail;
-  if (body.contactPhone !== undefined) updateData.contactPhone = body.contactPhone;
-  if (body.zipCode !== undefined) updateData.zipCode = body.zipCode;
-  if (body.yearsInBusiness !== undefined) updateData.yearsInBusiness = body.yearsInBusiness;
-  if (body.employees !== undefined) updateData.employees = body.employees;
-  if (body.annualRevenue !== undefined) updateData.annualRevenue = body.annualRevenue;
-  if (body.fundingGoals !== undefined) updateData.fundingGoals = body.fundingGoals;
-  if (body.missionStatement !== undefined) updateData.missionStatement = body.missionStatement;
-  if (body.certifications !== undefined) updateData.certifications = body.certifications;
-  if (body.fundingAmount !== undefined) updateData.fundingAmount = body.fundingAmount;
-  if (body.naicsCodes !== undefined) updateData.naicsCodesJson = JSON.stringify(body.naicsCodes);
+  if (body.businessName !== undefined) updateData.businessName = text(body.businessName);
+  if (body.onboarded !== undefined) updateData.onboarded = Boolean(body.onboarded);
+  if (body.entityType !== undefined) updateData.entityType = text(body.entityType, 60);
+  if (body.state !== undefined) updateData.state = text(body.state, 40);
+  if (body.industry !== undefined) updateData.industry = text(body.industry);
+  if (body.ownerName !== undefined) updateData.ownerName = text(body.ownerName);
+  if (body.contactEmail !== undefined) updateData.contactEmail = text(body.contactEmail, 320);
+  if (body.contactPhone !== undefined) updateData.contactPhone = text(body.contactPhone, 60);
+  if (body.zipCode !== undefined) updateData.zipCode = text(body.zipCode, 20);
+  if (body.yearsInBusiness !== undefined) updateData.yearsInBusiness = text(body.yearsInBusiness, 20);
+  if (body.employees !== undefined) updateData.employees = text(body.employees, 20);
+  if (body.annualRevenue !== undefined) updateData.annualRevenue = text(body.annualRevenue, 20);
+  if (body.fundingGoals !== undefined) updateData.fundingGoals = clampStringArray(body.fundingGoals);
+  if (body.missionStatement !== undefined)
+    updateData.missionStatement = text(body.missionStatement, LIMITS.missionStatement);
+  if (body.certifications !== undefined)
+    updateData.certifications = clampStringArray(body.certifications);
+  if (body.fundingAmount !== undefined) updateData.fundingAmount = text(body.fundingAmount, 60);
+  if (body.naicsCodes !== undefined) {
+    const codes = Array.isArray(body.naicsCodes) ? body.naicsCodes.slice(0, 10) : [];
+    updateData.naicsCodesJson = JSON.stringify(
+      codes.map((n: { code?: unknown; title?: unknown }) => ({
+        code: clampText(n?.code, 10),
+        title: clampText(n?.title, 300),
+      })),
+    );
+  }
   updateData.updatedAt = new Date();
 
   const [updated] = await db
@@ -139,10 +161,17 @@ router.put("/checklist-state", async (req: Request, res: Response) => {
     return;
   }
   const userId = req.user.id;
-  const { itemId, completed } = req.body;
+  const { itemId, completed } = req.body ?? {};
 
-  if (!itemId || typeof completed !== "boolean") {
+  if (typeof itemId !== "string" || typeof completed !== "boolean") {
     res.status(400).json({ error: "Missing itemId or completed" });
+    return;
+  }
+
+  // Only known checklist ids are stored, so the persisted JSON blob cannot be
+  // grown without bound by a client sending arbitrary keys.
+  if (!(itemId in CHECKLIST_LABELS)) {
+    res.status(400).json({ error: "Unknown checklist item" });
     return;
   }
 
@@ -171,15 +200,52 @@ router.put("/checklist-state", async (req: Request, res: Response) => {
   res.json(current);
 });
 
+/**
+ * Closes the caller's account.
+ *
+ * Deletes every row we hold for them and then removes their Supabase auth
+ * record so the login itself is gone. If the auth record cannot be removed
+ * (no service-role key configured, or Supabase rejects the call) the data is
+ * still erased, but we report `authDeleted: false` so the UI can tell the user
+ * what actually happened instead of claiming a complete deletion.
+ */
 router.delete("/account", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
   const userId = req.user.id;
-  await db.delete(checklistsTable).where(eq(checklistsTable.userId, userId));
-  await db.delete(profilesTable).where(eq(profilesTable.id, userId));
-  res.json({ ok: true });
+
+  try {
+    // Ordered child-first; the users row would cascade, but being explicit
+    // keeps this correct if a future table forgets its cascade.
+    await db.delete(applicationsTable).where(eq(applicationsTable.userId, userId));
+    await db.delete(checklistsTable).where(eq(checklistsTable.userId, userId));
+    await db.delete(profilesTable).where(eq(profilesTable.id, userId));
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
+  } catch (err) {
+    req.log.error({ err }, "Account data deletion failed");
+    res.status(500).json({ error: "Could not delete your account. Please contact support." });
+    return;
+  }
+
+  if (!supabaseAdmin) {
+    req.log.error(
+      { userId },
+      "SUPABASE_SERVICE_ROLE_KEY is not configured; auth user was not deleted",
+    );
+    res.json({ ok: true, authDeleted: false });
+    return;
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (error) {
+    req.log.error({ err: error, userId }, "Supabase auth user deletion failed");
+    res.json({ ok: true, authDeleted: false });
+    return;
+  }
+
+  res.json({ ok: true, authDeleted: true });
 });
 
 export default router;

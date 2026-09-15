@@ -63,6 +63,16 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
 - Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
 
+**Required environment variables**
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection (provided by Replit) |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Verifying the caller's Supabase access token |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Required for account deletion to remove the Supabase auth user.** Without it `DELETE /api/account` erases all data but returns `authDeleted: false` and the user can still sign in. Keep this server-side only — it bypasses row-level security. |
+| `ALLOWED_ORIGINS` | Comma-separated origins allowed to call the API cross-origin (e.g. `https://foundedright.co`). Unset in production rejects cross-origin requests; unset in development reflects any origin. |
+| `AI_INTEGRATIONS_ANTHROPIC_BASE_URL` / `AI_INTEGRATIONS_ANTHROPIC_API_KEY` | Anthropic integration |
+
 ### `lib/db` (`@workspace/db`)
 
 Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
@@ -118,8 +128,12 @@ FoundedRight — a comprehensive business launch platform. Single-page React + V
 - **Capability Statement**: AI-generated one-pager via `/api/ai/capability-statement`
 - **AI Assistant**: Chat with Claude claude-3-5-haiku personalized to user's profile
 
-Auth: Supabase Auth (email/password + Google OAuth). `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` env vars.
+**Public pages** (served at real paths via the SPA rewrite, matched in `staticPage()` before the auth gate): `/privacy`, `/terms`, `/contact` — see `src/components/LegalPages.tsx`. Update `LEGAL_CONTACT`, `BUSINESS_ENTITY`, and `LEGAL_EFFECTIVE_DATE` there.
+
+Auth: Supabase Auth (email/password + Google OAuth). `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` env vars (the build fails without them in production).
 Profile + checklist state persisted to PostgreSQL via `/api/profile`, `/api/checklist-state`, `/api/applications`.
+
+**AI request rules** — the client never supplies prompts. `/api/ai/*` builds every prompt server-side from the caller's stored profile and checklist (`src/lib/aiContext.ts`), so a crafted request body cannot repurpose the Anthropic key. All AI routes are rate limited (`src/lib/rateLimit.ts`) and all user input is length-clamped (`src/lib/sanitize.ts`). `src/data/checklist.ts` mirrors the item ids in `App.tsx`'s `SECTIONS` — keep them in sync when adding a checklist item.
 
 ### `scripts` (`@workspace/scripts`)
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
+import { PrivacyPolicy, TermsOfService, ContactPage } from "./components/LegalPages";
 import type { Session } from "@supabase/supabase-js";
 import { ArrowRight, ArrowDown, ChevronDown, CheckCircle2, TrendingUp, Search, FileText, LayoutList, Bot, Target, ShieldAlert, Award } from "lucide-react";
 
@@ -31,7 +32,7 @@ const SECTIONS = [
   {
     id: "credit", title: "Business credit profile", icon: "📊",
     items: [
-      { id: "dnb", label: "Register with Dun & Bradstreet (DUNS number)", note: "Required by many federal grant programs. Free at dnb.com.", tags: ["required", "gov"] },
+      { id: "dnb", label: "Register with Dun & Bradstreet (D-U-N-S number)", note: "No longer required for federal awards — the UEI replaced DUNS in April 2022. Still used by many commercial lenders, corporate supplier programs, and private grantmakers. Free at dnb.com.", tags: [] },
       { id: "experian", label: "Register with Experian Business & Equifax Business", note: "Establishes your file with all three major business bureaus.", tags: [] },
       { id: "net30", label: "Apply for a Net-30 vendor account", note: "Uline, Quill, or Grainger — fastest way to build a Paydex score.", tags: [] },
       { id: "paydex", label: "Monitor your Paydex score monthly", note: "A score of 80+ is needed for most favorable loan terms.", tags: [] },
@@ -44,7 +45,7 @@ const SECTIONS = [
       { id: "uei", label: "Obtain a UEI (Unique Entity Identifier)", note: "Issued automatically upon SAM registration.", tags: ["required", "gov"] },
       { id: "naics", label: "Identify and apply for NAICS codes", note: "Determines which contracts and grants you're eligible for.", tags: ["required", "gov"] },
       { id: "sbasize", label: "Determine your SBA business size standard", note: "Sets whether you qualify as a small business for set-asides.", tags: ["gov"] },
-      { id: "stateprocure", label: "Register in your state procurement portal", note: "Maryland eMMA portal for state contracts and grants.", tags: ["gov"] },
+      { id: "stateprocure", label: "Register in your state procurement portal", note: "Every state runs its own portal for state contracts and grants (Maryland uses eMMA, Virginia eVA, California Cal eProcure). Search \"[your state] procurement portal vendor registration\".", tags: ["gov"] },
       { id: "grantsgov", label: "Register in Grants.gov", note: "Central portal for all federal grant opportunities.", tags: ["required"] },
     ]
   },
@@ -52,7 +53,7 @@ const SECTIONS = [
     id: "certs", title: "Small business certifications", icon: "🏅",
     items: [
       { id: "sba8a", label: "Apply for SBA 8(a) Business Development (if eligible)", note: "For socially/economically disadvantaged owners. 9 years of access.", tags: ["gov"] },
-      { id: "wosb", label: "Women-Owned Small Business (WOSB) certification", note: "Unlocks 5% set-aside of federal contracts.", tags: ["gov"] },
+      { id: "wosb", label: "Women-Owned Small Business (WOSB) certification", note: "Makes you eligible to compete for WOSB set-aside contracts. The federal government targets 5% of prime contract dollars to women-owned small businesses each year.", tags: ["gov"] },
       { id: "vosb", label: "Veteran-Owned / SDVOSB certification (if eligible)", note: "Verify through VA's Vendor Information Pages portal.", tags: ["gov"] },
       { id: "hubzone", label: "HUBZone certification (if in qualifying area)", note: "Check the HUBZone map at sba.gov.", tags: ["gov"] },
       { id: "mbe", label: "Minority Business Enterprise (MBE) certification", note: "Issued by NMSDC — opens corporate supplier diversity programs.", tags: [] },
@@ -452,6 +453,8 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
           <div className="flex items-center gap-3 md:gap-6">
             <a
               href="https://setup-concierge.lovable.app"
+              target="_blank"
+              rel="noreferrer noopener"
               className="hidden md:flex text-[#1B3A6B] font-semibold hover:text-[#2D5BE3] transition-colors items-center gap-1"
             >
               Done-For-You Setup
@@ -533,7 +536,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
           </div>
           <div className="grid md:grid-cols-3 gap-5 md:gap-8">
             {[
-              { num: "01", title: "You don't know which steps actually matter for funding", desc: "There are hundreds of things you could do. Most don't move the needle. Knowing the right 46 steps — in the right order — changes everything.", icon: <Target className="w-6 h-6 text-[#1B3A6B]" /> },
+              { num: "01", title: "You don't know which steps actually matter for funding", desc: `There are hundreds of things you could do. Most don't move the needle. Knowing the right ${getTotal()} steps — in the right order — changes everything.`, icon: <Target className="w-6 h-6 text-[#1B3A6B]" /> },
               { num: "02", title: "Grant and loan applications keep getting rejected or ignored", desc: "It's not just what you apply for — it's how ready your business looks on paper. Most rejections happen before anyone reads your application.", icon: <ShieldAlert className="w-6 h-6 text-[#1B3A6B]" /> },
               { num: "03", title: "Government contracts feel impossible to break into", desc: "SAM.gov, NAICS codes, capability statements, set-asides — the terminology alone is a barrier. But billions in contracts go to small businesses every year.", icon: <Award className="w-6 h-6 text-[#1B3A6B]" /> },
             ].map((pt, i) => (
@@ -547,11 +550,6 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mb-4 leading-snug group-hover:text-[#1B3A6B] transition-colors" style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>{pt.title}</h3>
                   <p className="text-slate-600 leading-relaxed mb-8">{pt.desc}</p>
-                </div>
-                <div style={{ position: "relative", zIndex: 1 }} className="mt-auto">
-                  <span className="inline-flex items-center gap-2 font-bold text-[#1B3A6B] group-hover:text-[#2D5BE3] transition-colors">
-                    Learn more <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
                 </div>
               </div>
             ))}
@@ -568,7 +566,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[
-              { title: "Personalized Setup Checklist", desc: "46 precise steps across 8 categories — legal, banking, credit, federal registrations, presence, and more.", icon: <CheckCircle2 className="w-5 h-5" /> },
+              { title: "Personalized Setup Checklist", desc: `${getTotal()} precise steps across ${SECTIONS.length} categories — legal, banking, credit, federal registrations, presence, and more.`, icon: <CheckCircle2 className="w-5 h-5" /> },
               { title: "AI-Matched Funding", desc: "Grants, loans, and contracts matched to your industry, stage, and location. Know what you're ready for.", icon: <TrendingUp className="w-5 h-5" /> },
               { title: "NAICS Code Finder", desc: "Describe your business in plain English and get the exact NAICS codes you need for government contracting.", icon: <Search className="w-5 h-5" /> },
               { title: "Capability Statement Generator", desc: "AI generates a professional one-pager from your business profile — ready for any government contract application.", icon: <FileText className="w-5 h-5" /> },
@@ -605,9 +603,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
               <div key={i} className="pt-8 md:pt-0 md:px-12 flex flex-col items-center text-center group">
                 <div className="font-black text-[#1B3A6B] mb-4 group-hover:scale-110 transition-transform duration-300" style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "3rem" }}>{item.stat}</div>
                 <div className="text-lg font-medium text-slate-800 mb-4">{item.label}</div>
-                <div className="text-sm font-semibold text-[#C9A84C] flex items-center gap-1 group-hover:text-[#D4B663] transition-colors">
-                  Why this matters <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </div>
+                <div className="text-sm font-semibold text-[#C9A84C]">{item.context}</div>
               </div>
             ))}
           </div>
@@ -638,7 +634,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
           <div className="mt-5 text-sm md:text-base font-medium text-blue-200 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             <span>No credit card required</span>
             <span className="w-1 h-1 rounded-full bg-[#C9A84C] hidden sm:inline-block"></span>
-            <span>Free forever plan</span>
+            <span>Free to use</span>
           </div>
         </div>
       </section>
@@ -650,10 +646,10 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
             <FoundedRightLogo variant="sidebar" height={26} />
           </div>
           <div className="text-slate-400 text-sm flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-            <a className="hover:text-white transition-colors" href="https://setup-concierge.lovable.app">Done-For-You Setup</a>
-            <button className="hover:text-white transition-colors" onClick={() => {}}>Privacy Policy</button>
-            <button className="hover:text-white transition-colors" onClick={() => {}}>Terms of Service</button>
-            <button className="hover:text-white transition-colors" onClick={() => {}}>Contact</button>
+            <a className="hover:text-white transition-colors" href="https://setup-concierge.lovable.app" target="_blank" rel="noreferrer noopener">Done-For-You Setup</a>
+            <a className="hover:text-white transition-colors" href="/privacy">Privacy Policy</a>
+            <a className="hover:text-white transition-colors" href="/terms">Terms of Service</a>
+            <a className="hover:text-white transition-colors" href="/contact">Contact</a>
           </div>
           <span className="text-slate-500 text-xs md:text-sm text-center">© {new Date().getFullYear()} FoundedRight. All rights reserved.</span>
         </div>
@@ -662,6 +658,34 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
     </div>
   );
 }
+
+/**
+ * Accuracy notice shown on every AI-generated surface. These features produce
+ * plausible-looking program names, deadlines and links that can be wrong, and
+ * users act on them with real money and real deadlines.
+ */
+const AiNotice = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
+  <div
+    role="note"
+    style={{
+      display: "flex",
+      gap: 8,
+      alignItems: "flex-start",
+      background: "#FFFBEB",
+      border: "1px solid #FDE68A",
+      borderRadius: 10,
+      padding: "10px 14px",
+      fontSize: 12,
+      lineHeight: 1.6,
+      color: "#78350F",
+      marginBottom: 16,
+      ...style,
+    }}
+  >
+    <span aria-hidden="true" style={{ flexShrink: 0 }}>⚠</span>
+    <span>{children}</span>
+  </div>
+);
 
 const Tag = ({ type }: { type: string }) => {
   const map: Record<string, { bg: string; color: string; label: string }> = {
@@ -703,10 +727,22 @@ function getFundingReadiness(f: typeof STATIC_FUNDING[0], cl: Record<string, boo
   return { ready: missing === 0, missing };
 }
 
+/** Screens shown to a signed-out visitor. */
+type AuthScreen = "signin" | "signup" | "forgot" | "reset";
+
+/** Paths served as standalone pages, outside the authenticated app shell. */
+function staticPage(pathname: string) {
+  const path = pathname.replace(/\/+$/, "").toLowerCase();
+  if (path === "/privacy") return <PrivacyPolicy />;
+  if (path === "/terms") return <TermsOfService />;
+  if (path === "/contact") return <ContactPage />;
+  return null;
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authScreen, setAuthScreen] = useState<"signin" | "signup" | "forgot" | "reset">("signin");
+  const [authScreen, setAuthScreen] = useState<AuthScreen>("signin");
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
 
@@ -745,6 +781,10 @@ export default function App() {
     setShowLanding(false);
     setAuthScreen("signin");
   }
+
+  // Legal pages are public and must render without waiting on auth.
+  const legalPage = staticPage(window.location.pathname);
+  if (legalPage) return legalPage;
 
   if (authLoading) {
     return (
@@ -792,7 +832,7 @@ export default function App() {
   return <Dashboard session={session} onLogout={handleLogout} />;
 }
 
-function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; setMode: (m: "signin" | "signup" | "forgot") => void }) {
+function AuthScreens({ mode, setMode }: { mode: AuthScreen; setMode: (m: AuthScreen) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -888,12 +928,12 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
                 {divider}
                 <div style={{ marginBottom: 14 }}>
                   <label style={labelStyle}>Email</label>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus style={inputStyle} placeholder="you@company.com" />
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus autoComplete="email" style={inputStyle} placeholder="you@company.com" />
                 </div>
                 <div style={{ marginBottom: 6 }}>
                   <label style={labelStyle}>Password</label>
                   <div style={{ position: "relative" }}>
-                    <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required style={{ ...inputStyle, paddingRight: 42 }} placeholder="••••••••" />
+                    <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" style={{ ...inputStyle, paddingRight: 42 }} placeholder="••••••••" />
                     <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 13 }}>{showPw ? "Hide" : "Show"}</button>
                   </div>
                 </div>
@@ -915,20 +955,25 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
                 {!success && <>
                   <div style={{ marginBottom: 14 }}>
                     <label style={labelStyle}>Email</label>
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus style={inputStyle} placeholder="you@company.com" />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus autoComplete="email" style={inputStyle} placeholder="you@company.com" />
                   </div>
                   <div style={{ marginBottom: 14 }}>
                     <label style={labelStyle}>Password</label>
                     <div style={{ position: "relative" }}>
-                      <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required style={{ ...inputStyle, paddingRight: 42 }} placeholder="At least 8 characters" />
+                      <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password" style={{ ...inputStyle, paddingRight: 42 }} placeholder="At least 8 characters" />
                       <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 13 }}>{showPw ? "Hide" : "Show"}</button>
                     </div>
                   </div>
                   <div style={{ marginBottom: 20 }}>
                     <label style={labelStyle}>Confirm password</label>
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required style={inputStyle} placeholder="••••••••" />
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" style={inputStyle} placeholder="••••••••" />
                   </div>
                   <button type="submit" disabled={loading} style={{ width: "100%", background: "#1B3A6B", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Creating account…" : "Create account"}</button>
+                  <div style={{ fontSize: 11.5, color: "#94A3B8", textAlign: "center", marginTop: 14, lineHeight: 1.6 }}>
+                    By creating an account you agree to our{" "}
+                    <a href="/terms" style={{ color: "#2D5BE3" }}>Terms of Service</a> and{" "}
+                    <a href="/privacy" style={{ color: "#2D5BE3" }}>Privacy Policy</a>.
+                  </div>
                 </>}
                 <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#64748B" }}>Already have an account? <button type="button" onClick={() => { setMode("signin"); setError(""); setSuccess(""); }} style={{ background: "none", border: "none", color: "#2D5BE3", cursor: "pointer", fontSize: 13 }}>Sign in</button></div>
               </form>
@@ -943,7 +988,7 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
                 {!success && <>
                   <div style={{ marginBottom: 20 }}>
                     <label style={labelStyle}>Email</label>
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus style={inputStyle} placeholder="you@company.com" />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus autoComplete="email" style={inputStyle} placeholder="you@company.com" />
                   </div>
                   <button type="submit" disabled={loading} style={{ width: "100%", background: "#1B3A6B", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Sending…" : "Send reset link"}</button>
                 </>}
@@ -1007,7 +1052,7 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
                 </div>
                 <div style={{ marginBottom: 24 }}>
                   <label style={labelStyle}>Confirm password</label>
-                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required style={inputStyle} placeholder="••••••••" />
+                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" style={inputStyle} placeholder="••••••••" />
                 </div>
                 <button type="submit" disabled={loading} style={{ width: "100%", background: "#1B3A6B", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Updating…" : "Update password"}</button>
               </form>
@@ -1066,6 +1111,8 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
   const [pwSave, setPwSave] = useState<"idle" | "saving" | "saved" | string>("idle");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   const authHeaders = () => ({ Authorization: `Bearer ${session.access_token}` });
 
@@ -1152,39 +1199,12 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
     setChatInput("");
     setAiLoading(true);
 
-    const done = getDone(checklist), score = getScore(checklist), total = getTotal();
-    const completedItems = SECTIONS.flatMap(s => s.items.filter(i => checklist[i.id]).map(i => i.label)).slice(0, 10);
-    const pendingItems = SECTIONS.flatMap(s => s.items.filter(i => !checklist[i.id]).map(i => i.label)).slice(0, 10);
-
-    const systemPrompt = `You are Founded Right Assistant, an expert business setup advisor helping a small business owner structure their LLC for grants, loans, and government contracts.
-
-Business profile:
-- Business name: ${profile.businessName || "not yet set"}
-- Entity type: ${profile.entityType || "LLC"}
-- Industry: ${profile.industry || "not specified"}
-- State: ${profile.state || "MD"}
-- ZIP: ${profile.zipCode || "not provided"}
-- Years in business: ${profile.yearsInBusiness || "0"}
-- Employees: ${profile.employees || "1"}
-- Annual revenue: $${profile.annualRevenue || "0"}K
-- Mission: ${profile.missionStatement || "not provided"}
-- Funding goals: ${(profile.fundingGoals || []).join(", ") || "not specified"}
-- Target funding amount: ${profile.fundingAmount || "not specified"}
-- Owner certifications: ${(profile.certifications || []).join(", ") || "none selected"}
-- NAICS codes: ${(profile.naicsCodes || []).map(n => n.code + " " + n.title).join(", ") || "not yet identified"}
-- Setup score: ${score}% complete (${done}/${total} steps done)
-
-Completed steps: ${completedItems.join(", ") || "none yet"}
-Still pending: ${pendingItems.join(", ")}
-
-Be concise, specific, and actionable. Keep answers under 200 words unless more is needed.`;
-
     try {
       const history = chatMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
       const r = await fetch(`${API}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ message: msg, history, systemPrompt }),
+        body: JSON.stringify({ message: msg, history }),
       });
       if (r.ok) {
         const { reply } = await r.json();
@@ -1205,7 +1225,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
       const r = await fetch(`${API}/ai/naics`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ query: naicsQuery, industry: profile.industry }),
+        body: JSON.stringify({ query: naicsQuery }),
       });
       if (r.ok) {
         const { codes } = await r.json();
@@ -1224,7 +1244,6 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
       const r = await fetch(`${API}/ai/grants`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ profile }),
       });
       if (r.ok) {
         const { grants } = await r.json();
@@ -1326,9 +1345,27 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
 
   async function deleteAccount() {
     setDeleteLoading(true);
+    setDeleteError("");
     try {
-      await fetch(`${API}/account`, { method: "DELETE", headers: authHeaders() });
-    } catch { /* ignore */ }
+      const r = await fetch(`${API}/account`, { method: "DELETE", headers: authHeaders() });
+      if (!r.ok) {
+        setDeleteError("We couldn't delete your account. Please email support@foundedright.co.");
+        setDeleteLoading(false);
+        return;
+      }
+      // The server erases all data even when it cannot remove the login
+      // itself; say so rather than claiming a complete deletion.
+      const { authDeleted } = await r.json().catch(() => ({ authDeleted: true }));
+      if (authDeleted === false) {
+        alert(
+          "Your business data has been deleted. Your sign-in record could not be removed automatically — email support@foundedright.co and we'll finish removing it.",
+        );
+      }
+    } catch {
+      setDeleteError("Network error. Please check your connection and try again.");
+      setDeleteLoading(false);
+      return;
+    }
     await supabase.auth.signOut();
   }
 
@@ -1338,7 +1375,6 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
       const r = await fetch(`${API}/ai/capabilitystatement`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ profile }),
       });
       if (r.ok) {
         const { statement } = await r.json();
@@ -1609,8 +1645,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
 
             {screen === "docs" && (
               <>
-                <div className="page-title">Document vault</div>
-                <div className="page-sub">Track documents needed for funding applications — linked to your checklist</div>
+                <div className="page-title">Document tracker</div>
+                <div className="page-sub">Track which documents you have ready for funding applications — linked to your checklist. Files are not uploaded or stored here.</div>
                 <div className="doc-grid">
                   {[
                     { name: "Articles of Organization", icon: "📄", key: "articles" },
@@ -1641,7 +1677,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                 <div className="card">
                   <div className="card-title">What to do next</div>
                   <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.7 }}>
-                    Click any document card to mark it complete. Documents are linked to your checklist — checking off items there will update this vault automatically.
+                    Click any document card to mark it complete. Documents are linked to your checklist — checking off items there updates this tracker automatically.
                     <div style={{ marginTop: 10 }}>
                       <button className="chip" onClick={() => setScreen("checklist")}>Go to checklist →</button>
                     </div>
@@ -1811,6 +1847,10 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               <>
                 <div className="page-title">NAICS code finder</div>
                 <div className="page-sub">Find the right industry codes to unlock government contracts and grants — powered by AI</div>
+                <AiNotice>
+                  AI-suggested codes are validated against the official 2022 NAICS list, but the best code for your business is a judgment call. Confirm your selection at{" "}
+                  <a href="https://www.census.gov/naics/" target="_blank" rel="noreferrer noopener" style={{ color: "#78350F", fontWeight: 600 }}>census.gov/naics</a> before registering it in SAM.gov.
+                </AiNotice>
                 <div className="card" style={{ marginBottom: 16 }}>
                   <div className="card-title">What does your business do?</div>
                   <div style={{ display: "flex", gap: 10 }}>
@@ -1886,8 +1926,13 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
 
             {screen === "livegrants" && (
               <>
-                <div className="page-title">Live funding database</div>
-                <div className="page-sub">AI-matched opportunities for {profile.businessName || "your business"} — personalized to your profile</div>
+                <div className="page-title">Funding matches</div>
+                <div className="page-sub">AI-suggested opportunities for {profile.businessName || "your business"} — a starting point for your own research</div>
+                <AiNotice>
+                  <strong>These results are AI-generated, not a live feed.</strong> Program names, amounts, deadlines and eligibility rules are often out of date or wrong. Verify every opportunity on{" "}
+                  <a href="https://www.grants.gov" target="_blank" rel="noreferrer noopener" style={{ color: "#78350F", fontWeight: 600 }}>grants.gov</a>,{" "}
+                  <a href="https://sam.gov" target="_blank" rel="noreferrer noopener" style={{ color: "#78350F", fontWeight: 600 }}>sam.gov</a>, or the agency's own site before you apply or rely on a date.
+                </AiNotice>
                 {!grantsFetched ? (
                   <div className="card" style={{ textAlign: "center", padding: "40px 20px" }}>
                     <div style={{ fontSize: 32, marginBottom: 12 }}>◎</div>
@@ -1949,7 +1994,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                                 </div>
                                 <div className="fund-meta">{String(g.agency)} · {String(g.deadline)}</div>
                                 <div className="fund-amt">{String(g.amount)}</div>
-                                {g.description && <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{String(g.description)}</div>}
+                                {Boolean(g.description) && <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{String(g.description)}</div>}
                                 {reqs.length > 0 && (
                                   <div style={{ marginTop: 8 }}>
                                     <div style={{ fontSize: 11, color: "#64748B", marginBottom: 4 }}>Key requirements:</div>
@@ -1961,7 +2006,14 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                                   </div>
                                 )}
                               </div>
-                              {g.applyUrl && <a href={String(g.applyUrl)} target="_blank" rel="noreferrer"><button className="fund-btn">Apply →</button></a>}
+                              {Boolean(g.applyUrl) && (
+                                <a href={String(g.applyUrl)} target="_blank" rel="noreferrer noopener" style={{ textAlign: "center" }}>
+                                  <button className="fund-btn">{g.applyUrlVerified ? "Official page →" : "Search grants.gov →"}</button>
+                                  {!g.applyUrlVerified && (
+                                    <div style={{ fontSize: 9.5, color: "#94A3B8", marginTop: 4, maxWidth: 120 }}>Link unverified — searching instead</div>
+                                  )}
+                                </a>
+                              )}
                             </div>
                           </div>
                         );
@@ -1975,6 +2027,9 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               <>
                 <div className="page-title">AI assistant</div>
                 <div className="page-sub">Ask anything about your business setup, funding, certifications, and strategy</div>
+                <AiNotice>
+                  The assistant can be wrong about deadlines, eligibility and filing rules. Confirm anything you plan to act on with the official source — irs.gov, sba.gov, grants.gov, sam.gov, fincen.gov, or your Secretary of State. This is not legal, tax or financial advice.
+                </AiNotice>
                 <div className="chips">
                   {["What steps should I prioritize this week?", "What grants am I eligible for right now?", "Do I need to file a BOI report with FinCEN?", "Explain SAM.gov registration step by step", "What certifications should I apply for?", "How do I build business credit fast?"].map(p => (
                     <button key={p} className="chip" onClick={() => sendChat(p)}>{p}</button>
@@ -2194,6 +2249,9 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                     <div>
                       <div className="page-title" style={{ marginBottom: 2 }}>Capability statement</div>
                       <div className="page-sub">AI-generated government contracting one-pager from your profile</div>
+                      <AiNotice>
+                        Review every line before you send this to a contracting officer. AI drafts can overstate experience or claim capabilities you don't have yet — you are responsible for its accuracy.
+                      </AiNotice>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
                       {capStatement && !capEditing && <>
@@ -2499,12 +2557,25 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                         ) : (
                           <div style={{ background: "#FEE2E2", borderRadius: 10, padding: "16px 18px" }}>
                             <div style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", marginBottom: 8 }}>Are you absolutely sure?</div>
-                            <div style={{ fontSize: 12, color: "#7F1D1D", marginBottom: 14 }}>Type "delete" to confirm. All your data will be permanently removed.</div>
+                            <div style={{ fontSize: 12, color: "#7F1D1D", marginBottom: 10 }}>Type <strong>delete</strong> below to confirm. Your profile, checklist progress, tracked applications, and sign-in will be permanently removed.</div>
+                            <input
+                              value={deleteText}
+                              onChange={e => setDeleteText(e.target.value)}
+                              aria-label="Type delete to confirm"
+                              placeholder="delete"
+                              autoComplete="off"
+                              style={{ width: "100%", maxWidth: 220, background: "#fff", border: "1px solid #FCA5A5", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#0F172A", boxSizing: "border-box", marginBottom: 14, outline: "none" }}
+                            />
+                            {deleteError && <div style={{ fontSize: 12, color: "#991B1B", fontWeight: 600, marginBottom: 12 }}>{deleteError}</div>}
                             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                              <button onClick={deleteAccount} disabled={deleteLoading} style={{ background: "#DC2626", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontSize: 13, fontWeight: 700, cursor: deleteLoading ? "not-allowed" : "pointer", opacity: deleteLoading ? 0.7 : 1 }}>
+                              <button
+                                onClick={deleteAccount}
+                                disabled={deleteLoading || deleteText.trim().toLowerCase() !== "delete"}
+                                style={{ background: "#DC2626", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontSize: 13, fontWeight: 700, cursor: deleteLoading || deleteText.trim().toLowerCase() !== "delete" ? "not-allowed" : "pointer", opacity: deleteLoading || deleteText.trim().toLowerCase() !== "delete" ? 0.5 : 1 }}
+                              >
                                 {deleteLoading ? "Deleting…" : "Yes, delete everything"}
                               </button>
-                              <button onClick={() => setDeleteConfirm(false)} style={{ background: "none", border: "1px solid #CBD5E1", color: "#475569", borderRadius: 8, padding: "9px 18px", fontSize: 13, cursor: "pointer" }}>
+                              <button onClick={() => { setDeleteConfirm(false); setDeleteText(""); setDeleteError(""); }} style={{ background: "none", border: "1px solid #CBD5E1", color: "#475569", borderRadius: 8, padding: "9px 18px", fontSize: 13, cursor: "pointer" }}>
                                 Cancel
                               </button>
                             </div>
@@ -2562,7 +2633,7 @@ function Onboarding({ profile, onboardStep, setOnboardStep, saveProfile, complet
 
         {onboardStep === 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {["Personalized 46-step setup checklist based on your goals", "Funding opportunities matched to your profile and certifications", "NAICS code finder to unlock government contracts", "AI assistant that knows your business context", "Document vault and deadline calendar"].map((f, i) => (
+            {[`Personalized ${getTotal()}-step setup checklist based on your goals`, "Funding opportunities matched to your profile and certifications", "NAICS code finder to unlock government contracts", "AI assistant that knows your business context", "Document tracker and deadline calendar"].map((f, i) => (
               <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", background: "#F8FAFC", borderRadius: 8, padding: "10px 14px" }}>
                 <span style={{ color: "#0D7A4E", fontWeight: 700, flexShrink: 0 }}>✓</span>
                 <span style={{ fontSize: 13, color: "#475569" }}>{f}</span>

@@ -166,7 +166,7 @@ export function InteractionAffordance() {
                 onClick={() => {}}
               >
                 <div className="w-10 h-10 rounded-lg bg-[#1B3A6B] text-white flex items-center justify-center mb-6 shadow-sm group-hover:bg-[#C9A84C] transition-colors">
-                  {React.cloneElement(feat.icon as React.ReactElement, { className: "w-5 h-5" })}
+                  {React.cloneElement(feat.icon as React.ReactElement<{ className?: string }>, { className: "w-5 h-5" })}
                 </div>
                 <h3 className="font-heading text-lg font-bold text-[#1B3A6B] mb-3">{feat.title}</h3>
                 <p className="font-body text-slate-600 pr-6">{feat.desc}</p>
