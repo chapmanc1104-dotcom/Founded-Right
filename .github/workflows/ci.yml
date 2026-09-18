@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+# A newer push to the same branch makes an in-flight run obsolete.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # The bizlaunch build inlines these and fails when they are missing in a
+      # production build. CI only needs the build to be representative, so
+      # placeholders are correct here — the real values come from the Replit
+      # environment at deploy time. These are not secrets.
+      VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      # Both vite configs require these to be set.
+      PORT: "24748"
+      BASE_PATH: /
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches `modules = ["nodejs-24"]` in .replit.
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # `build` runs typecheck first, so this gate covers both. It is the check
+      # that was failing on master before and left three type errors in App.tsx
+      # undetected — Vite does not typecheck.
+      - name: Typecheck and build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm run test
