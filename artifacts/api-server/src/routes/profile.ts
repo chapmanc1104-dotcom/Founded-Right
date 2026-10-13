@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { profilesTable, checklistsTable } from "@workspace/db";
+import { profilesTable, checklistsTable, applicationsTable, usersTable } from "@workspace/db";
+import { createClient } from "@supabase/supabase-js";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
@@ -177,9 +178,23 @@ router.delete("/account", async (req: Request, res: Response) => {
     return;
   }
   const userId = req.user.id;
+  await db.delete(applicationsTable).where(eq(applicationsTable.userId, userId));
   await db.delete(checklistsTable).where(eq(checklistsTable.userId, userId));
   await db.delete(profilesTable).where(eq(profilesTable.id, userId));
-  res.json({ ok: true });
+  await db.delete(usersTable).where(eq(usersTable.id, userId));
+
+  // Remove the login itself. Needs SUPABASE_SERVICE_ROLE_KEY (server-only secret).
+  let authUserDeleted = false;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceKey && process.env.VITE_SUPABASE_URL) {
+    const admin = createClient(process.env.VITE_SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
+    const { error } = await admin.auth.admin.deleteUser(userId);
+    if (error) req.log.error({ err: error }, "Failed to delete Supabase auth user");
+    else authUserDeleted = true;
+  } else {
+    req.log.warn("SUPABASE_SERVICE_ROLE_KEY not set; auth user was not deleted");
+  }
+  res.json({ ok: true, authUserDeleted });
 });
 
 export default router;
