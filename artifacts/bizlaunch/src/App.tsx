@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
+import { LegalPage, DISCLAIMER_SHORT, CONTACT_EMAIL, type LegalKind } from "./legal";
 import { ArrowRight, ArrowDown, ChevronDown, CheckCircle2, TrendingUp, Search, FileText, LayoutList, Bot, Target, ShieldAlert, Award } from "lucide-react";
 
 const API = import.meta.env.BASE_URL + "api";
@@ -44,7 +45,7 @@ const SECTIONS = [
       { id: "uei", label: "Obtain a UEI (Unique Entity Identifier)", note: "Issued automatically upon SAM registration.", tags: ["required", "gov"] },
       { id: "naics", label: "Identify and apply for NAICS codes", note: "Determines which contracts and grants you're eligible for.", tags: ["required", "gov"] },
       { id: "sbasize", label: "Determine your SBA business size standard", note: "Sets whether you qualify as a small business for set-asides.", tags: ["gov"] },
-      { id: "stateprocure", label: "Register in your state procurement portal", note: "Maryland eMMA portal for state contracts and grants.", tags: ["gov"] },
+      { id: "stateprocure", label: "Register in your state procurement portal", note: "Find your state's procurement/vendor portal (for example, Maryland uses eMMA) to bid on state contracts and grants.", tags: ["gov"] },
       { id: "grantsgov", label: "Register in Grants.gov", note: "Central portal for all federal grant opportunities.", tags: ["required"] },
     ]
   },
@@ -99,26 +100,53 @@ const SECTIONS = [
   },
 ];
 
+// Illustrative readiness guide only. Programs, amounts and deadlines change, so no
+// calendar dates are hardcoded here: always confirm on the program's official site.
 const STATIC_FUNDING = [
-  { id: "mbda", title: "MBDA Business Center Grant", type: "Grant", agency: "Minority Business Development Agency", deadline: "Apr 15, 2026", amount: "Up to $50,000", match: 91, needs: ["sam", "execsummary", "budget"], applyUrl: "https://www.mbda.gov" },
-  { id: "sba-ca", title: "SBA Community Advantage Loan", type: "Loan", agency: "SBA · Rolling deadline", deadline: "Rolling", amount: "$50,000–$350,000", match: 85, needs: ["bizplan", "taxreturns", "balsheet"], applyUrl: "https://www.sba.gov" },
-  { id: "tedco", title: "MD TEDCO Rural Business Fund", type: "Grant", agency: "Maryland Technology Development", deadline: "May 1, 2026", amount: "Up to $100,000", match: 78, needs: ["sam", "execsummary", "budget", "bizplan"], applyUrl: "https://www.tedcomd.com" },
-  { id: "sbir", title: "SBIR Phase I Grant", type: "Grant", agency: "NSF / DOD · R&D focus required", deadline: "Rolling", amount: "Up to $275,000", match: 62, needs: ["sam", "uei", "execsummary", "budget"], applyUrl: "https://www.sbir.gov" },
-  { id: "sba7a", title: "SBA 7(a) Business Loan", type: "Loan", agency: "SBA · Bank partners", deadline: "Rolling", amount: "Up to $5,000,000", match: 74, needs: ["ein", "bizplan", "taxreturns", "balsheet", "personalcredit"], applyUrl: "https://www.sba.gov" },
-  { id: "microloan", title: "SBA Microloan", type: "Loan", agency: "SBA · Nonprofit intermediaries", deadline: "Rolling", amount: "Up to $50,000", match: 88, needs: ["ein", "bizplan"], applyUrl: "https://www.sba.gov" },
-  { id: "marylandsmall", title: "Maryland Small Business Relief Grant", type: "Grant", agency: "Maryland DHCD · State program", deadline: "Jun 30, 2026", amount: "Up to $25,000", match: 80, needs: ["ein", "execsummary", "budget"], applyUrl: "https://dhcd.maryland.gov" },
+  { id: "mbda", title: "MBDA Business Center Services", type: "Grant", agency: "Minority Business Development Agency", deadline: "Check program site", amount: "Varies", match: 91, needs: ["sam", "execsummary", "budget"], applyUrl: "https://www.mbda.gov" },
+  { id: "sba-micro", title: "SBA Microloan", type: "Loan", agency: "SBA · Nonprofit intermediaries", deadline: "Rolling", amount: "Up to $50,000", match: 88, needs: ["ein", "bizplan"], applyUrl: "https://www.sba.gov/funding-programs/loans/microloans" },
+  { id: "sba7a", title: "SBA 7(a) Business Loan", type: "Loan", agency: "SBA · Bank partners", deadline: "Rolling", amount: "Up to $5,000,000", match: 74, needs: ["ein", "bizplan", "taxreturns", "balsheet", "personalcredit"], applyUrl: "https://www.sba.gov/funding-programs/loans/7a-loans" },
+  { id: "sbir", title: "SBIR / STTR (R&D focus required)", type: "Grant", agency: "Participating federal agencies", deadline: "Check program site", amount: "Varies by agency and phase", match: 62, needs: ["sam", "uei", "execsummary", "budget"], applyUrl: "https://www.sbir.gov" },
   { id: "govcon", title: "Federal Small Business Set-Aside Contracts", type: "Gov Contract", agency: "Federal · Various agencies", deadline: "Ongoing", amount: "Varies", match: 55, needs: ["sam", "uei", "naics", "sbasize"], applyUrl: "https://sam.gov" },
 ];
 
-const EVENTS = [
-  { date: "Mar 31, 2026", label: "Q1 estimated tax payment", urgent: true },
-  { date: "Apr 15, 2026", label: "MBDA Grant deadline", urgent: false },
-  { date: "Apr 15, 2026", label: "Personal tax return due", urgent: true },
-  { date: "May 1, 2026", label: "TEDCO Fund closes", urgent: false },
-  { date: "Jun 30, 2026", label: "MD Small Business Relief Grant", urgent: false },
-  { date: "Annual", label: "SAM.gov renewal", urgent: false },
-  { date: "Annual", label: "Maryland Annual Report filing", urgent: false },
+// Recurring dates are generated relative to today so the calendar never goes stale.
+// Federal dates shift when they land on a weekend/holiday; verify with the IRS/agency.
+const RECURRING_EVENTS = [
+  { month: 1, day: 15, label: "Q4 estimated tax payment (federal)", urgent: true },
+  { month: 4, day: 15, label: "Federal tax return due / Q1 estimated tax payment", urgent: true },
+  { month: 6, day: 15, label: "Q2 estimated tax payment (federal)", urgent: true },
+  { month: 9, day: 15, label: "Q3 estimated tax payment (federal)", urgent: true },
+  { month: 0, day: 0, label: "SAM.gov registration renewal (annually, from your registration date)", urgent: false },
+  { month: 0, day: 0, label: "State annual report (due date varies by state, check yours)", urgent: false },
 ];
+function getUpcomingEvents(now = new Date()) {
+  const dated = RECURRING_EVENTS.filter(e => e.month > 0).map(e => {
+    let d = new Date(now.getFullYear(), e.month - 1, e.day);
+    if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d = new Date(now.getFullYear() + 1, e.month - 1, e.day);
+    return { d, date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), label: e.label, urgent: e.urgent };
+  }).sort((a, b) => a.d.getTime() - b.d.getTime());
+  return [...dated, ...RECURRING_EVENTS.filter(e => e.month === 0).map(e => ({ d: now, date: "Annual", label: e.label, urgent: e.urgent }))];
+}
+function CalendarMonth({ year, month, marks }: { year: number; month: number; marks: number[] }) {
+  const first = new Date(year, month, 1).getDay();
+  const days = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const isCur = today.getFullYear() === year && today.getMonth() === month;
+  return (
+    <div className="card">
+      <div className="card-title">{new Date(year, month, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+      <div className="cal-wrap">
+        {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => <div key={d} className="cal-hdr">{d}</div>)}
+        {[...Array(first)].map((_, i) => <div key={`e${i}`} />)}
+        {[...Array(days)].map((_, i) => {
+          const day = i + 1;
+          return <div key={day} className={`cal-day${isCur && day === today.getDate() ? " today" : marks.includes(day) ? " has" : ""}`}>{day}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
 
 const ONBOARD_STEPS = [
   { title: "Welcome", sub: "Let's get your business set up for funding" },
@@ -439,7 +467,7 @@ const landingCss = `
 }
 `;
 
-function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: () => void }) {
+function LandingPage({ onSignUp, onSignIn, onLegal }: { onSignUp: () => void; onSignIn: () => void; onLegal: (k: LegalKind) => void }) {
   return (
     <div className="min-h-screen bg-white text-slate-800" style={{ fontFamily: "Inter, sans-serif" }}>
 
@@ -533,7 +561,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
           </div>
           <div className="grid md:grid-cols-3 gap-5 md:gap-8">
             {[
-              { num: "01", title: "You don't know which steps actually matter for funding", desc: "There are hundreds of things you could do. Most don't move the needle. Knowing the right 46 steps — in the right order — changes everything.", icon: <Target className="w-6 h-6 text-[#1B3A6B]" /> },
+              { num: "01", title: "You don't know which steps actually matter for funding", desc: `There are hundreds of things you could do. Most don't move the needle. Knowing the right ${getTotal()} steps — in the right order — changes everything.`, icon: <Target className="w-6 h-6 text-[#1B3A6B]" /> },
               { num: "02", title: "Grant and loan applications keep getting rejected or ignored", desc: "It's not just what you apply for — it's how ready your business looks on paper. Most rejections happen before anyone reads your application.", icon: <ShieldAlert className="w-6 h-6 text-[#1B3A6B]" /> },
               { num: "03", title: "Government contracts feel impossible to break into", desc: "SAM.gov, NAICS codes, capability statements, set-asides — the terminology alone is a barrier. But billions in contracts go to small businesses every year.", icon: <Award className="w-6 h-6 text-[#1B3A6B]" /> },
             ].map((pt, i) => (
@@ -568,7 +596,7 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[
-              { title: "Personalized Setup Checklist", desc: "46 precise steps across 8 categories — legal, banking, credit, federal registrations, presence, and more.", icon: <CheckCircle2 className="w-5 h-5" /> },
+              { title: "Personalized Setup Checklist", desc: `${getTotal()} precise steps across 8 categories — legal, banking, credit, federal registrations, presence, and more.`, icon: <CheckCircle2 className="w-5 h-5" /> },
               { title: "AI-Matched Funding", desc: "Grants, loans, and contracts matched to your industry, stage, and location. Know what you're ready for.", icon: <TrendingUp className="w-5 h-5" /> },
               { title: "NAICS Code Finder", desc: "Describe your business in plain English and get the exact NAICS codes you need for government contracting.", icon: <Search className="w-5 h-5" /> },
               { title: "Capability Statement Generator", desc: "AI generates a professional one-pager from your business profile — ready for any government contract application.", icon: <FileText className="w-5 h-5" /> },
@@ -651,12 +679,13 @@ function LandingPage({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
           </div>
           <div className="text-slate-400 text-sm flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <a className="hover:text-white transition-colors" href="https://setup-concierge.lovable.app">Done-For-You Setup</a>
-            <button className="hover:text-white transition-colors" onClick={() => {}}>Privacy Policy</button>
-            <button className="hover:text-white transition-colors" onClick={() => {}}>Terms of Service</button>
-            <button className="hover:text-white transition-colors" onClick={() => {}}>Contact</button>
+            <button className="hover:text-white transition-colors" onClick={() => onLegal("privacy")}>Privacy Policy</button>
+            <button className="hover:text-white transition-colors" onClick={() => onLegal("terms")}>Terms of Service</button>
+            {CONTACT_EMAIL && <button className="hover:text-white transition-colors" onClick={() => onLegal("contact")}>Contact</button>}
           </div>
           <span className="text-slate-500 text-xs md:text-sm text-center">© {new Date().getFullYear()} FoundedRight. All rights reserved.</span>
         </div>
+        <p className="max-w-3xl mx-auto mt-6 text-center text-slate-500 text-xs leading-relaxed">{DISCLAIMER_SHORT}</p>
       </footer>
 
     </div>
@@ -709,6 +738,7 @@ export default function App() {
   const [authScreen, setAuthScreen] = useState<"signin" | "signup" | "forgot" | "reset">("signin");
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
+  const [legal, setLegal] = useState<LegalKind | null>(null);
 
   useEffect(() => {
     // Check if we're on the /reset-password path before session loads
@@ -777,22 +807,27 @@ export default function App() {
     );
   }
 
+  if (!session && legal) {
+    return <LegalPage kind={legal} onClose={() => setLegal(null)} />;
+  }
+
   if (!session) {
     if (showLanding) {
       return (
         <LandingPage
           onSignUp={() => { setShowLanding(false); setAuthScreen("signup"); }}
           onSignIn={() => { setShowLanding(false); setAuthScreen("signin"); }}
+          onLegal={setLegal}
         />
       );
     }
-    return <AuthScreens mode={authScreen} setMode={setAuthScreen} />;
+    return <AuthScreens mode={authScreen} setMode={setAuthScreen} onLegal={setLegal} />;
   }
 
   return <Dashboard session={session} onLogout={handleLogout} />;
 }
 
-function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; setMode: (m: "signin" | "signup" | "forgot") => void }) {
+function AuthScreens({ mode, setMode, onLegal }: { mode: "signin" | "signup" | "forgot"; setMode: (m: "signin" | "signup" | "forgot") => void; onLegal: (k: LegalKind) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -929,6 +964,7 @@ function AuthScreens({ mode, setMode }: { mode: "signin" | "signup" | "forgot"; 
                     <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required style={inputStyle} placeholder="••••••••" />
                   </div>
                   <button type="submit" disabled={loading} style={{ width: "100%", background: "#1B3A6B", border: "none", color: "#fff", borderRadius: 10, padding: "12px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", opacity: loading ? 0.7 : 1 }}>{loading ? "Creating account…" : "Create account"}</button>
+                  <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "#64748B" }}>By creating an account you agree to our <button type="button" onClick={() => onLegal("terms")} style={{ background: "none", border: "none", color: "#2D5BE3", cursor: "pointer", fontSize: 12, padding: 0 }}>Terms</button> and <button type="button" onClick={() => onLegal("privacy")} style={{ background: "none", border: "none", color: "#2D5BE3", cursor: "pointer", fontSize: 12, padding: 0 }}>Privacy Policy</button>. FoundedRight provides general information, not legal, tax or financial advice.</div>
                 </>}
                 <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#64748B" }}>Already have an account? <button type="button" onClick={() => { setMode("signin"); setError(""); setSuccess(""); }} style={{ background: "none", border: "none", color: "#2D5BE3", cursor: "pointer", fontSize: 13 }}>Sign in</button></div>
               </form>
@@ -1059,6 +1095,8 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
   const [capDraft, setCapDraft] = useState<CapStatement | null>(null);
   const [capCopied, setCapCopied] = useState(false);
 
+  const [legal, setLegal] = useState<LegalKind | null>(null);
+  const [deleteText, setDeleteText] = useState("");
   const [settingsTab, setSettingsTab] = useState<"profile" | "account">("profile");
   const [settingsProfile, setSettingsProfile] = useState<Profile>({ ...defaultProfile });
   const [settingsSave, setSettingsSave] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -1156,35 +1194,15 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
     const completedItems = SECTIONS.flatMap(s => s.items.filter(i => checklist[i.id]).map(i => i.label)).slice(0, 10);
     const pendingItems = SECTIONS.flatMap(s => s.items.filter(i => !checklist[i.id]).map(i => i.label)).slice(0, 10);
 
-    const systemPrompt = `You are Founded Right Assistant, an expert business setup advisor helping a small business owner structure their LLC for grants, loans, and government contracts.
-
-Business profile:
-- Business name: ${profile.businessName || "not yet set"}
-- Entity type: ${profile.entityType || "LLC"}
-- Industry: ${profile.industry || "not specified"}
-- State: ${profile.state || "MD"}
-- ZIP: ${profile.zipCode || "not provided"}
-- Years in business: ${profile.yearsInBusiness || "0"}
-- Employees: ${profile.employees || "1"}
-- Annual revenue: $${profile.annualRevenue || "0"}K
-- Mission: ${profile.missionStatement || "not provided"}
-- Funding goals: ${(profile.fundingGoals || []).join(", ") || "not specified"}
-- Target funding amount: ${profile.fundingAmount || "not specified"}
-- Owner certifications: ${(profile.certifications || []).join(", ") || "none selected"}
-- NAICS codes: ${(profile.naicsCodes || []).map(n => n.code + " " + n.title).join(", ") || "not yet identified"}
-- Setup score: ${score}% complete (${done}/${total} steps done)
-
-Completed steps: ${completedItems.join(", ") || "none yet"}
-Still pending: ${pendingItems.join(", ")}
-
-Be concise, specific, and actionable. Keep answers under 200 words unless more is needed.`;
+    // The system prompt is built server-side; we only send profile data as context.
+    const context = { profile, score, done, total, completedItems, pendingItems };
 
     try {
       const history = chatMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
       const r = await fetch(`${API}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ message: msg, history, systemPrompt }),
+        body: JSON.stringify({ message: msg, history, context }),
       });
       if (r.ok) {
         const { reply } = await r.json();
@@ -1395,6 +1413,8 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
 
   const score = getScore(checklist), done = getDone(checklist), total = getTotal();
   const urgent = SECTIONS.flatMap(s => s.items.filter(i => i.tags.includes("required") && !checklist[i.id]));
+
+  if (legal) return <LegalPage kind={legal} onClose={() => setLegal(null)} />;
 
   if (loading) {
     return (
@@ -1726,6 +1746,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               <>
                 <div className="page-title">Funding opportunities</div>
                 <div className="page-sub">Matched to your setup progress — complete more steps to unlock higher matches</div>
+                <div style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>Illustrative guide only. Programs, amounts and deadlines change, so confirm each one on the official site.</div>
                 <div className="filter-row">
                   {["all", "grants", "loans", "gov"].map(f => (
                     <button key={f} className={`filter-btn${fundFilter === f ? " active" : ""}`} onClick={() => setFundFilter(f)}>
@@ -1769,34 +1790,21 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               <>
                 <div className="page-title">Calendar</div>
                 <div className="page-sub">Upcoming deadlines and renewal dates for your business</div>
-                <div className="two-col">
-                  <div className="card">
-                    <div className="card-title">March 2026</div>
-                    <div className="cal-wrap">
-                      {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => <div key={d} className="cal-hdr">{d}</div>)}
-                      {[...Array(6)].map((_, i) => <div key={`e${i}`} />)}
-                      {[...Array(31)].map((_, i) => {
-                        const day = i + 1;
-                        return <div key={day} className={`cal-day${day === 20 ? " today" : [15,22,31].includes(day) ? " has" : ""}`}>{day}</div>;
-                      })}
+                {(() => {
+                  const now = new Date();
+                  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                  const marksFor = (y: number, m: number) => RECURRING_EVENTS.filter(e => e.month === m + 1 && new Date(y, m, e.day).getMonth() === m).map(e => e.day);
+                  return (
+                    <div className="two-col">
+                      <CalendarMonth year={now.getFullYear()} month={now.getMonth()} marks={marksFor(now.getFullYear(), now.getMonth())} />
+                      <CalendarMonth year={next.getFullYear()} month={next.getMonth()} marks={marksFor(next.getFullYear(), next.getMonth())} />
                     </div>
-                  </div>
-                  <div className="card">
-                    <div className="card-title">April 2026</div>
-                    <div className="cal-wrap">
-                      {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => <div key={d} className="cal-hdr">{d}</div>)}
-                      {[...Array(3)].map((_, i) => <div key={`e${i}`} />)}
-                      {[...Array(30)].map((_, i) => {
-                        const day = i + 1;
-                        return <div key={day} className={`cal-day${[15].includes(day) ? " has" : ""}`}>{day}</div>;
-                      })}
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
                 <div className="card">
                   <div className="card-title">Upcoming deadlines</div>
-                  {EVENTS.map(e => (
-                    <div className="event-row" key={e.label + e.date}>
+                  {getUpcomingEvents().map(e => (
+                    <div className="event-row" key={e.label}>
                       <div className="event-dot" style={{ background: e.urgent ? "#B91C1C" : "#2D5BE3" }} />
                       <div className="event-date">{e.date}</div>
                       <div className="event-label">{e.label}</div>
@@ -1888,6 +1896,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               <>
                 <div className="page-title">Live funding database</div>
                 <div className="page-sub">AI-matched opportunities for {profile.businessName || "your business"} — personalized to your profile</div>
+                <div style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>These results are AI-generated and may be incomplete or out of date. Always confirm eligibility, amounts and deadlines on the official program site before applying.</div>
                 {!grantsFetched ? (
                   <div className="card" style={{ textAlign: "center", padding: "40px 20px" }}>
                     <div style={{ fontSize: 32, marginBottom: 12 }}>◎</div>
@@ -1975,6 +1984,7 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
               <>
                 <div className="page-title">AI assistant</div>
                 <div className="page-sub">Ask anything about your business setup, funding, certifications, and strategy</div>
+                <div style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>AI answers can be wrong or outdated and are not legal, tax or financial advice. Verify important details with the official agency or a licensed professional.</div>
                 <div className="chips">
                   {["What steps should I prioritize this week?", "What grants am I eligible for right now?", "Do I need to file a BOI report with FinCEN?", "Explain SAM.gov registration step by step", "What certifications should I apply for?", "How do I build business credit fast?"].map(p => (
                     <button key={p} className="chip" onClick={() => sendChat(p)}>{p}</button>
@@ -2499,9 +2509,10 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                         ) : (
                           <div style={{ background: "#FEE2E2", borderRadius: 10, padding: "16px 18px" }}>
                             <div style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", marginBottom: 8 }}>Are you absolutely sure?</div>
-                            <div style={{ fontSize: 12, color: "#7F1D1D", marginBottom: 14 }}>Type "delete" to confirm. All your data will be permanently removed.</div>
+                            <div style={{ fontSize: 12, color: "#7F1D1D", marginBottom: 10 }}>Type "delete" to confirm. Your profile, checklist, applications and login will be permanently removed.</div>
+                            <input value={deleteText} onChange={e => setDeleteText(e.target.value)} placeholder="delete" style={{ border: "1px solid #FCA5A5", borderRadius: 8, padding: "8px 10px", fontSize: 13, marginBottom: 12, width: 160 }} />
                             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                              <button onClick={deleteAccount} disabled={deleteLoading} style={{ background: "#DC2626", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontSize: 13, fontWeight: 700, cursor: deleteLoading ? "not-allowed" : "pointer", opacity: deleteLoading ? 0.7 : 1 }}>
+                              <button onClick={deleteAccount} disabled={deleteLoading || deleteText.trim().toLowerCase() !== "delete"} style={{ background: "#DC2626", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontSize: 13, fontWeight: 700, cursor: deleteLoading ? "not-allowed" : "pointer", opacity: deleteLoading ? 0.7 : 1 }}>
                                 {deleteLoading ? "Deleting…" : "Yes, delete everything"}
                               </button>
                               <button onClick={() => setDeleteConfirm(false)} style={{ background: "none", border: "1px solid #CBD5E1", color: "#475569", borderRadius: 8, padding: "9px 18px", fontSize: 13, cursor: "pointer" }}>
@@ -2516,6 +2527,13 @@ Be concise, specific, and actionable. Keep answers under 200 words unless more i
                 </>
               );
             })()}
+
+            <div style={{ marginTop: 32, paddingTop: 14, borderTop: "1px solid #E2E8F0", fontSize: 11, color: "#64748B", lineHeight: 1.6 }}>
+              {DISCLAIMER_SHORT}{" "}
+              <button onClick={() => setLegal("terms")} style={{ background: "none", border: "none", color: "#2D5BE3", cursor: "pointer", fontSize: 11, padding: 0 }}>Terms</button>
+              {" · "}
+              <button onClick={() => setLegal("privacy")} style={{ background: "none", border: "none", color: "#2D5BE3", cursor: "pointer", fontSize: 11, padding: 0 }}>Privacy</button>
+            </div>
 
           </div>
         </div>
@@ -2562,7 +2580,7 @@ function Onboarding({ profile, onboardStep, setOnboardStep, saveProfile, complet
 
         {onboardStep === 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {["Personalized 46-step setup checklist based on your goals", "Funding opportunities matched to your profile and certifications", "NAICS code finder to unlock government contracts", "AI assistant that knows your business context", "Document vault and deadline calendar"].map((f, i) => (
+            {[`Personalized ${getTotal()}-step setup checklist based on your goals`, "Funding opportunities matched to your profile and certifications", "NAICS code finder to unlock government contracts", "AI assistant that knows your business context", "Document vault and deadline calendar"].map((f, i) => (
               <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", background: "#F8FAFC", borderRadius: 8, padding: "10px 14px" }}>
                 <span style={{ color: "#0D7A4E", fontWeight: 700, flexShrink: 0 }}>✓</span>
                 <span style={{ fontSize: 13, color: "#475569" }}>{f}</span>
@@ -2698,7 +2716,7 @@ function Onboarding({ profile, onboardStep, setOnboardStep, saveProfile, complet
                 <div style={{ color: "#64748B" }}>Business</div><div style={{ color: "#1E293B" }}>{profile.businessName || "—"}</div>
                 <div style={{ color: "#64748B" }}>Industry</div><div style={{ color: "#1E293B" }}>{profile.industry || "—"}</div>
                 <div style={{ color: "#64748B" }}>State</div><div style={{ color: "#1E293B" }}>{profile.state}</div>
-                <div style={{ color: "#64748B" }}>Funding goals</div><div style={{ color: "#1E293B" }}>{(profile.fundingGoals || []).length > 0 ? (profile.fundingGoals || []).join(", ") : "—"}</div>
+                <div style={{ color: "#64748B" }}>Funding goals</div><div style={{ color: "#1E293B" }}>{(profile.fundingGoals || []).length > 0 ? (profile.fundingGoals || []).map(g => GOAL_OPTIONS.find(o => o.id === g)?.label ?? g).join(", ") : "—"}</div>
               </div>
             </div>
             {(profile.certifications || []).length > 0 && (
