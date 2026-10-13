@@ -1107,7 +1107,37 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
 
   const authHeaders = () => ({ Authorization: `Bearer ${session.access_token}` });
 
+  // Latest values for rapid successive edits (avoids stale-closure overwrites) and
+  // a queue so profile PUTs reach the server in order.
+  const profileRef = useRef(profile);
+  const checklistRef = useRef(checklist);
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  useEffect(() => { checklistRef.current = checklist; }, [checklist]);
+
+  // Retry once on 401: the first request after an email-confirm sign-in can race the token.
+  const getWithRetry = async (url: string) => {
+    let r = await fetch(url, { headers: authHeaders() });
+    if (r.status === 401) { await new Promise(res => setTimeout(res, 800)); r = await fetch(url, { headers: authHeaders() }); }
+    return r;
+  };
+
+  // Keep AI results and onboarding position across refreshes (per user, this browser only).
+  const storeKey = (k: string) => `fr:${session.user.id}:${k}`;
+  const loadStored = <T,>(k: string): T | null => { try { const v = localStorage.getItem(storeKey(k)); return v ? JSON.parse(v) as T : null; } catch { return null; } };
+  const saveStored = (k: string, v: unknown) => { try { localStorage.setItem(storeKey(k), JSON.stringify(v)); } catch { /* ignore */ } };
+  useEffect(() => {
+    const chat = loadStored<ChatMessage[]>("chat"); if (chat?.length) setChatMessages(chat);
+    const cap = loadStored<CapStatement>("cap"); if (cap) { setCapStatement(cap); setCapDraft(cap); }
+    const grants = loadStored<Record<string, unknown>[]>("grants"); if (grants?.length) { setLiveGrants(grants); setGrantsFetched(true); }
+    const step = loadStored<number>("onboardStep"); if (typeof step === "number" && step >= 0 && step <= 4) setOnboardStep(step);
+  }, []);
+  useEffect(() => { if (chatMessages.length > 1) saveStored("chat", chatMessages.slice(-40)); }, [chatMessages]);
+  useEffect(() => { if (capStatement) saveStored("cap", capStatement); }, [capStatement]);
+  useEffect(() => { if (grantsFetched && liveGrants.length) saveStored("grants", liveGrants); }, [liveGrants, grantsFetched]);
+  useEffect(() => { saveStored("onboardStep", onboardStep); }, [onboardStep]);
+
   useEffect(() => { fetchProfile(); fetchChecklist(); fetchApplications(); }, []);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages, aiLoading]);
   useEffect(() => {
     if (screen === "settings") {
@@ -1121,7 +1151,7 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
 
   async function fetchProfile() {
     try {
-      const r = await fetch(`${API}/profile`, { headers: authHeaders() });
+      const r = await getWithRetry(`${API}/profile`);
       if (r.ok) {
         const d = await r.json();
         setProfile({
@@ -1151,31 +1181,37 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
 
   async function fetchChecklist() {
     try {
-      const r = await fetch(`${API}/checklist-state`, { headers: authHeaders() });
+      const r = await getWithRetry(`${API}/checklist-state`);
       if (r.ok) setChecklist(await r.json());
     } catch { /* ignore */ }
   }
 
   async function saveProfile(update: Partial<Profile>) {
-    const next = { ...profile, ...update };
+    const next = { ...profileRef.current, ...update };
+    profileRef.current = next;
     setProfile(next);
-    try {
-      await fetch(`${API}/profile`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify(next),
-      });
-    } catch { /* ignore */ }
+    saveQueue.current = saveQueue.current.then(async () => {
+      try {
+        await fetch(`${API}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(profileRef.current),
+        });
+      } catch { /* ignore */ }
+    });
+    await saveQueue.current;
   }
 
   async function toggleItem(id: string) {
-    const next = { ...checklist, [id]: !checklist[id] };
+    const wasDone = !!checklistRef.current[id];
+    const next = { ...checklistRef.current, [id]: !wasDone };
+    checklistRef.current = next;
     setChecklist(next);
     try {
       await fetch(`${API}/checklist-state`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ itemId: id, completed: !checklist[id] }),
+        body: JSON.stringify({ itemId: id, completed: !wasDone }),
       });
     } catch { /* ignore */ }
   }
@@ -1262,7 +1298,7 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
   async function fetchApplications() {
     setAppsLoading(true);
     try {
-      const r = await fetch(`${API}/applications`, { headers: authHeaders() });
+      const r = await getWithRetry(`${API}/applications`);
       if (r.ok) setApplications(await r.json());
     } catch { /* ignore */ }
     setAppsLoading(false);
@@ -1347,6 +1383,7 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
     try {
       await fetch(`${API}/account`, { method: "DELETE", headers: authHeaders() });
     } catch { /* ignore */ }
+    try { Object.keys(localStorage).filter(k => k.startsWith(`fr:${session.user.id}:`)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
     await supabase.auth.signOut();
   }
 
