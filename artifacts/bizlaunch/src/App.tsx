@@ -478,12 +478,6 @@ function LandingPage({ onSignUp, onSignIn, onLegal }: { onSignUp: () => void; on
             <FoundedRightLogo variant="full" height={26} />
           </div>
           <div className="flex items-center gap-3 md:gap-6">
-            <a
-              href="https://setup-concierge.lovable.app"
-              className="hidden md:flex text-[#1B3A6B] font-semibold hover:text-[#2D5BE3] transition-colors items-center gap-1"
-            >
-              Done-For-You Setup
-            </a>
             <button
               onClick={onSignIn}
               className="hidden sm:flex text-[#1B3A6B] font-semibold hover:text-[#2D5BE3] transition-colors items-center gap-1 group"
@@ -678,7 +672,6 @@ function LandingPage({ onSignUp, onSignIn, onLegal }: { onSignUp: () => void; on
             <FoundedRightLogo variant="sidebar" height={26} />
           </div>
           <div className="text-slate-400 text-sm flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-            <a className="hover:text-white transition-colors" href="https://setup-concierge.lovable.app">Done-For-You Setup</a>
             <button className="hover:text-white transition-colors" onClick={() => onLegal("privacy")}>Privacy Policy</button>
             <button className="hover:text-white transition-colors" onClick={() => onLegal("terms")}>Terms of Service</button>
             {CONTACT_EMAIL && <button className="hover:text-white transition-colors" onClick={() => onLegal("contact")}>Contact</button>}

@@ -25,8 +25,8 @@ function Terms(): ReactNode {
       <p style={p}>Do not misuse the Service: no unlawful use, no attempts to disrupt or probe the Service, no automated scraping, and no use of the AI features as a general-purpose AI service.</p>
       <h2 style={h}>5. No guarantees</h2>
       <p style={p}>The Service is provided "as is" without warranties of any kind. We do not guarantee funding, certification, contract awards, or any business outcome. To the fullest extent permitted by law, FoundedRight is not liable for indirect, incidental or consequential damages, and total liability is limited to the amount you paid for the Service in the prior 12 months (or $100 if none).</p>
-      <h2 style={h}>6. Paid services</h2>
-      <p style={p}>The platform is free to start. Any paid done-for-you services are offered separately and governed by their own written agreement.</p>
+      <h2 style={h}>6. Pricing</h2>
+      <p style={p}>The platform is currently free to use. If paid features are introduced, they will be described before you are charged and may be governed by additional terms.</p>
       <h2 style={h}>7. Changes</h2>
       <p style={p}>We may update these Terms; continued use after an update means you accept it. Effective {EFFECTIVE}.</p>
     </>
