@@ -26,7 +26,7 @@ async function isSafeHost(hostname: string): Promise<boolean> {
   }
 }
 
-async function reachable(url: string): Promise<boolean> {
+export async function reachable(url: string): Promise<boolean> {
   let current = url;
   for (let hop = 0; hop < 4; hop++) {
     const u = new URL(current);
