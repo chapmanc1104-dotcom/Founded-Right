@@ -100,15 +100,13 @@ const SECTIONS = [
   },
 ];
 
-// Illustrative readiness guide only. Programs, amounts and deadlines change, so no
-// calendar dates are hardcoded here: always confirm on the program's official site.
-const STATIC_FUNDING = [
-  { id: "mbda", title: "MBDA Business Center Services", type: "Grant", agency: "Minority Business Development Agency", deadline: "Check program site", amount: "Varies", match: 91, needs: ["sam", "execsummary", "budget"], applyUrl: "https://www.mbda.gov" },
-  { id: "sba-micro", title: "SBA Microloan", type: "Loan", agency: "SBA · Nonprofit intermediaries", deadline: "Rolling", amount: "Up to $50,000", match: 88, needs: ["ein", "bizplan"], applyUrl: "https://www.sba.gov/funding-programs/loans/microloans" },
-  { id: "sba7a", title: "SBA 7(a) Business Loan", type: "Loan", agency: "SBA · Bank partners", deadline: "Rolling", amount: "Up to $5,000,000", match: 74, needs: ["ein", "bizplan", "taxreturns", "balsheet", "personalcredit"], applyUrl: "https://www.sba.gov/funding-programs/loans/7a-loans" },
-  { id: "sbir", title: "SBIR / STTR (R&D focus required)", type: "Grant", agency: "Participating federal agencies", deadline: "Check program site", amount: "Varies by agency and phase", match: 62, needs: ["sam", "uei", "execsummary", "budget"], applyUrl: "https://www.sbir.gov" },
-  { id: "govcon", title: "Federal Small Business Set-Aside Contracts", type: "Gov Contract", agency: "Federal · Various agencies", deadline: "Ongoing", amount: "Varies", match: 55, needs: ["sam", "uei", "naics", "sbasize"], applyUrl: "https://sam.gov" },
-];
+// Federal programs come from the server's curated, dated table (see
+// artifacts/api-server/src/data/federalPrograms.ts). Nothing here is AI-generated.
+type Program = {
+  id: string; title: string; type: string; agency: string; summary: string; amount?: string; timing: string;
+  requirements: string[]; applyUrl: string; sourceUrl: string; lastVerified: string; needs: string[];
+  match: number; reasons: string[]; needsRecheck: boolean;
+};
 
 // Recurring dates are generated relative to today so the calendar never goes stale.
 // Federal dates shift when they land on a weekend/holiday; verify with the IRS/agency.
@@ -720,7 +718,7 @@ function getScore(cl: Record<string, boolean>) {
 function getDone(cl: Record<string, boolean>) {
   let done = 0; SECTIONS.forEach(s => s.items.forEach(i => { if (cl[i.id]) done++; })); return done;
 }
-function getFundingReadiness(f: typeof STATIC_FUNDING[0], cl: Record<string, boolean>) {
+function getFundingReadiness(f: Program, cl: Record<string, boolean>) {
   const missing = f.needs.filter(n => !cl[n]).length;
   return { ready: missing === 0, missing };
 }
@@ -1067,10 +1065,10 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
   const [naicsLoading, setNaicsLoading] = useState(false);
   const [naicsSearched, setNaicsSearched] = useState(false);
   const [naicsError, setNaicsError] = useState("");
-  const [liveGrants, setLiveGrants] = useState<Record<string, unknown>[]>([]);
-  const [grantsLoading, setGrantsLoading] = useState(false);
-  const [grantsFetched, setGrantsFetched] = useState(false);
-  const [liveGrantFilter, setLiveGrantFilter] = useState("all");
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [fundingNotices, setFundingNotices] = useState<string[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(true);
+  const [programsError, setProgramsError] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -1121,12 +1119,11 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
   useEffect(() => {
     const chat = loadStored<ChatMessage[]>("chat"); if (chat?.length) setChatMessages(chat);
     const cap = loadStored<CapStatement>("cap"); if (cap) { setCapStatement(cap); setCapDraft(cap); }
-    const grants = loadStored<Record<string, unknown>[]>("grants"); if (grants?.length) { setLiveGrants(grants); setGrantsFetched(true); }
     const step = loadStored<number>("onboardStep"); if (typeof step === "number" && step >= 0 && step <= 4) setOnboardStep(step);
   }, []);
   useEffect(() => { if (chatMessages.length > 1) saveStored("chat", chatMessages.slice(-40)); }, [chatMessages]);
   useEffect(() => { if (capStatement) saveStored("cap", capStatement); }, [capStatement]);
-  useEffect(() => { if (grantsFetched && liveGrants.length) saveStored("grants", liveGrants); }, [liveGrants, grantsFetched]);
+  useEffect(() => { if (!loading) fetchPrograms(); }, [loading, JSON.stringify([profile.certifications, profile.fundingGoals, profile.industry])]);
   useEffect(() => { saveStored("onboardStep", onboardStep); }, [onboardStep]);
 
   useEffect(() => { fetchProfile(); fetchChecklist(); fetchApplications(); }, []);
@@ -1265,27 +1262,21 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
     setNaicsLoading(false);
   }
 
-  async function fetchLiveGrants() {
-    setGrantsLoading(true);
+  async function fetchPrograms() {
+    setProgramsLoading(true); setProgramsError(false);
     try {
-      const r = await fetch(`${API}/ai/grants`, {
+      const r = await fetch(`${API}/funding/matches`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ profile }),
+        body: JSON.stringify({ profile: profileRef.current }),
       });
       if (r.ok) {
-        const { grants } = await r.json();
-        const normalized = (Array.isArray(grants) ? grants : []).map((g: Record<string, unknown>) => ({
-          ...g,
-          type: g.type === "contract" ? "Gov Contract" : g.type,
-          match: g.match ?? g.matchScore ?? 0,
-          requirements: (g.requirements ?? g.requiredSteps ?? []) as string[],
-        }));
-        setLiveGrants(normalized);
-        setGrantsFetched(true);
-      }
-    } catch { /* ignore */ }
-    setGrantsLoading(false);
+        const d = await r.json();
+        setPrograms(Array.isArray(d.programs) ? d.programs : []);
+        setFundingNotices(Array.isArray(d.notices) ? d.notices : []);
+      } else setProgramsError(true);
+    } catch { setProgramsError(true); }
+    setProgramsLoading(false);
   }
 
   async function fetchApplications() {
@@ -1472,9 +1463,8 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
     return items.filter(i => i.tags.includes(filter));
   };
 
-  const filteredFunding = STATIC_FUNDING.filter(f =>
-    fundFilter === "all" || (fundFilter === "grants" && f.type === "Grant") ||
-    (fundFilter === "loans" && f.type === "Loan") || (fundFilter === "gov" && f.type === "Gov Contract")
+  const filteredFunding = programs.filter(f =>
+    fundFilter === "all" || f.type === fundFilter
   );
 
   const navItems = [
@@ -1483,10 +1473,9 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
     { id: "docs", icon: "◈", label: "Documents", section: "Setup" },
     { id: "presence", icon: "🌐", label: "Presence", section: "Setup" },
     { id: "capstatement", icon: "◧", label: "Capability stmt.", section: "Setup" },
-    { id: "funding", icon: "$", label: "Opportunities", section: "Funding" },
+    { id: "funding", icon: "$", label: "Federal programs", section: "Funding" },
     { id: "calendar", icon: "◷", label: "Calendar", section: "Funding" },
     { id: "naics", icon: "⌖", label: "NAICS finder", section: "Funding" },
-    { id: "livegrants", icon: "◎", label: "Live grants", section: "Funding" },
     { id: "tracker", icon: "▦", label: "App tracker", section: "Funding" },
     { id: "ai", icon: "✦", label: "AI assistant", section: "Support" },
     { id: "settings", icon: "⚙", label: "Settings", section: "Support" },
@@ -1562,7 +1551,7 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
                   </div>
                   <div className="stat"><div className="stat-val">{done}</div><div className="stat-lbl">Steps completed</div></div>
                   <div className="stat"><div className="stat-val">{total - done}</div><div className="stat-lbl">Remaining steps</div></div>
-                  <div className="stat"><div className="stat-val">{STATIC_FUNDING.filter(f => getFundingReadiness(f, checklist).missing <= 2).length}</div><div className="stat-lbl">Funding matches</div></div>
+                  <div className="stat"><div className="stat-val">{programs.filter(f => f.match >= 65).length}</div><div className="stat-lbl">Strong program fits</div></div>
                 </div>
                 <div className="two-col">
                   <div className="card">
@@ -1592,13 +1581,13 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
                 <div className="card">
                   <div className="card-title">Top funding matches</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 10 }}>
-                    {STATIC_FUNDING.slice(0, 3).map(f => {
+                    {programs.slice(0, 3).map(f => {
                       const { missing } = getFundingReadiness(f, checklist);
                       return (
                         <div key={f.id} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 12 }}>
                           <div style={{ fontSize: 12, fontWeight: 600, color: "#1E293B" }}>{f.title}</div>
-                          <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3 }}>{f.type} · {f.deadline}</div>
-                          <div style={{ fontSize: 12, color: "#0D7A4E", fontWeight: 600, marginTop: 5 }}>{f.amount}</div>
+                          <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3 }}>{f.type} · {f.agency.split(",")[0]}</div>
+                          {f.amount && <div style={{ fontSize: 12, color: "#0D7A4E", fontWeight: 600, marginTop: 5 }}>{f.amount.split(".")[0].slice(0, 40)}</div>}
                           {missing > 0
                             ? <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>{missing} step{missing > 1 ? "s" : ""} needed</div>
                             : <div style={{ fontSize: 10, color: "#0D7A4E", marginTop: 5 }}>✓ Ready to apply</div>}
@@ -1774,42 +1763,67 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
 
             {screen === "funding" && (
               <>
-                <div className="page-title">Funding opportunities</div>
-                <div className="page-sub">Matched to your setup progress — complete more steps to unlock higher matches</div>
-                <div style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>Illustrative guide only. Programs, amounts and deadlines change, so confirm each one on the official site.</div>
+                <div className="page-title">Federal programs</div>
+                <div className="page-sub">Loans, certifications and registrations for federal funding and contracting — checked against official agency pages</div>
+                <div style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>
+                  Each program shows the date we last checked it against the agency's official page. Programs and rules change, so confirm eligibility, amounts and deadlines on the official site before applying. "Fit" reflects your profile selections and is not a prediction of approval.
+                </div>
+                {fundingNotices.map((n, i) => (
+                  <div key={i} style={{ fontSize: 12, color: "#1E3A8A", background: "#EFF4FF", border: "1px solid #BFDBFE", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>{n}</div>
+                ))}
                 <div className="filter-row">
-                  {["all", "grants", "loans", "gov"].map(f => (
+                  {["all", "Loan", "Grant", "Certification", "Registration", "Counseling"].map(f => (
                     <button key={f} className={`filter-btn${fundFilter === f ? " active" : ""}`} onClick={() => setFundFilter(f)}>
-                      {f === "all" ? "All types" : f === "grants" ? "Grants" : f === "loans" ? "Loans" : "Gov contracts"}
+                      {f === "all" ? "All types" : f === "Certification" ? "Certifications" : f === "Registration" ? "Registrations" : f === "Counseling" ? "Counseling" : f + "s"}
                     </button>
                   ))}
                 </div>
-                {filteredFunding.sort((a, b) => b.match - a.match).map(f => {
+                {programsLoading && <div style={{ color: "#64748B", fontSize: 13, padding: 20 }}>Loading programs…</div>}
+                {programsError && <div style={{ color: "#B91C1C", fontSize: 13, padding: 20 }}>Could not load programs. Please refresh and try again.</div>}
+                {filteredFunding.map(f => {
                   const { ready, missing } = getFundingReadiness(f, checklist);
                   return (
-                    <div key={f.id} className="fund-card" style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                          <div className="fund-title">{f.title}</div>
-                          {ready
-                            ? <span style={{ fontSize: 10, background: "#ECFDF5", color: "#0D7A4E", padding: "2px 8px", borderRadius: 99, fontWeight: 600 }}>Ready</span>
-                            : <span style={{ fontSize: 10, background: "#FEF2F2", color: "#B91C1C", padding: "2px 8px", borderRadius: 99 }}>{missing} step{missing > 1 ? "s" : ""} needed</span>}
-                          <span style={{ fontSize: 10, background: "#EFF4FF", color: "#2D5BE3", padding: "2px 8px", borderRadius: 99, marginLeft: "auto" }}>{f.match}% match</span>
-                        </div>
-                        <div className="fund-meta">{f.agency} · {f.deadline}</div>
-                        <div className="fund-amt">{f.amount}</div>
-                        {!ready && (
-                          <div style={{ marginTop: 8 }}>
-                            <div style={{ fontSize: 11, color: "#64748B", marginBottom: 4 }}>Still needed:</div>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {f.needs.filter(n => !checklist[n]).map(n => (
-                                <span key={n} style={{ fontSize: 10, background: "#E2E8F0", color: "#64748B", padding: "2px 8px", borderRadius: 99 }}>{n}</span>
-                              ))}
-                            </div>
+                    <div key={f.id} className="fund-card">
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                            <div className="fund-title">{f.title}</div>
+                            <span style={{ fontSize: 10, background: "#F1F5F9", color: "#475569", padding: "2px 8px", borderRadius: 99, fontWeight: 600 }}>{f.type}</span>
+                            {f.needs.length > 0 && (ready
+                              ? <span style={{ fontSize: 10, background: "#ECFDF5", color: "#0D7A4E", padding: "2px 8px", borderRadius: 99, fontWeight: 600 }}>Ready</span>
+                              : <span style={{ fontSize: 10, background: "#FEF2F2", color: "#B91C1C", padding: "2px 8px", borderRadius: 99 }}>{missing} step{missing > 1 ? "s" : ""} needed</span>)}
+                            <span style={{ fontSize: 10, background: "#EFF4FF", color: "#2D5BE3", padding: "2px 8px", borderRadius: 99, marginLeft: "auto" }}>{f.match}% fit</span>
                           </div>
-                        )}
+                          <div className="fund-meta">{f.agency} · {f.timing}</div>
+                          {f.amount && <div className="fund-amt">{f.amount}</div>}
+                          <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{f.summary}</div>
+                          {f.reasons.length > 0 && (
+                            <div style={{ fontSize: 11, color: "#2D5BE3", marginTop: 6 }}>Why it shows up: {f.reasons.join(" · ")}</div>
+                          )}
+                          {f.requirements.length > 0 && (
+                            <div style={{ marginTop: 8 }}>
+                              <div style={{ fontSize: 11, color: "#64748B", marginBottom: 4 }}>Requirements (per the agency):</div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                {f.requirements.map((r, i) => <span key={i} style={{ fontSize: 10, background: "#E2E8F0", color: "#475569", padding: "2px 8px", borderRadius: 99 }}>{r}</span>)}
+                              </div>
+                            </div>
+                          )}
+                          {!ready && f.needs.length > 0 && (
+                            <div style={{ marginTop: 8 }}>
+                              <div style={{ fontSize: 11, color: "#64748B", marginBottom: 4 }}>Still to do on your checklist:</div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                {f.needs.filter(n => !checklist[n]).map(n => (
+                                  <span key={n} style={{ fontSize: 10, background: "#FEF3C7", color: "#92400E", padding: "2px 8px", borderRadius: 99 }}>{SECTIONS.flatMap(sx => sx.items).find(i => i.id === n)?.label ?? n}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ fontSize: 10, color: f.needsRecheck ? "#B45309" : "#94A3B8", marginTop: 8 }}>
+                            {f.needsRecheck ? "Needs re-check: " : ""}Last verified {f.lastVerified} · <a href={f.sourceUrl} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>source</a>
+                          </div>
+                        </div>
+                        <a href={f.applyUrl} target="_blank" rel="noreferrer"><button className="fund-btn">Official site →</button></a>
                       </div>
-                      <a href={f.applyUrl} target="_blank" rel="noreferrer"><button className="fund-btn">Apply →</button></a>
                     </div>
                   );
                 })}
@@ -1922,101 +1936,13 @@ function Dashboard({ session, onLogout }: { session: Session; onLogout: () => vo
               </>
             )}
 
-            {screen === "livegrants" && (
-              <>
-                <div className="page-title">Live funding database</div>
-                <div className="page-sub">AI-matched opportunities for {profile.businessName || "your business"} — personalized to your profile</div>
-                <div style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>These results are AI-generated and may be incomplete or out of date. Always confirm eligibility, amounts and deadlines on the official program site before applying.</div>
-                {!grantsFetched ? (
-                  <div className="card" style={{ textAlign: "center", padding: "40px 20px" }}>
-                    <div style={{ fontSize: 32, marginBottom: 12 }}>◎</div>
-                    <div style={{ fontSize: 16, fontWeight: 500, color: "#1E293B", marginBottom: 8 }}>Find funding matched to your profile</div>
-                    <div style={{ fontSize: 13, color: "#64748B", marginBottom: 20, maxWidth: 400, margin: "0 auto 20px" }}>
-                      The AI will search federal, state, and private programs and score each one against your business profile, industry, certifications, and NAICS codes.
-                    </div>
-                    {profile.industry && (
-                      <div style={{ fontSize: 12, color: "#2D5BE3", background: "#EFF4FF", border: "1px solid #BFDBFE", borderRadius: 8, padding: "8px 16px", marginBottom: 20, display: "inline-block" }}>
-                        ✦ Profile: {profile.industry} · {profile.state} · {profile.entityType}
-                      </div>
-                    )}
-                    <br />
-                    <button className="start-btn" style={{ maxWidth: 240 }} onClick={fetchLiveGrants} disabled={grantsLoading}>
-                      {grantsLoading ? "Finding opportunities…" : "Find my funding →"}
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="filter-row">
-                      {["all", "Grant", "Loan", "Gov Contract"].map(f => (
-                        <button key={f} className={`filter-btn${liveGrantFilter === f ? " active" : ""}`} onClick={() => setLiveGrantFilter(f)}>
-                          {f === "all" ? "All types" : f}
-                        </button>
-                      ))}
-                      <button className="filter-btn" onClick={fetchLiveGrants} disabled={grantsLoading} style={{ marginLeft: "auto" }}>
-                        {grantsLoading ? "Refreshing…" : "↻ Refresh"}
-                      </button>
-                    </div>
-                    {liveGrants.filter((g) => liveGrantFilter === "all" || g.type === liveGrantFilter).length === 0 && (
-                      <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748B", fontSize: 13 }}>
-                        <div style={{ fontSize: 28, marginBottom: 12 }}>◎</div>
-                        {liveGrants.length === 0
-                          ? "No funding matches found for your current profile. Try updating your certifications or industry in your profile."
-                          : `No ${liveGrantFilter} opportunities match your current filters.`}
-                      </div>
-                    )}
-                    {liveGrants
-                      .filter((g) => liveGrantFilter === "all" || g.type === liveGrantFilter)
-                      .sort((a, b) => Number(b.match ?? 0) - Number(a.match ?? 0))
-                      .map((g, idx) => {
-                        const matchScore = Number(g.match ?? 0);
-                        const typeColors: Record<string, { bg: string; color: string }> = {
-                          "Grant": { bg: "#1D9E7520", color: "#0D7A4E" },
-                          "Loan": { bg: "#185FA520", color: "#1B6EBF" },
-                          "Gov Contract": { bg: "#7f77dd20", color: "#2D5BE3" },
-                          "Tax Credit": { bg: "#BA751720", color: "#D97706" },
-                        };
-                        const tc = typeColors[g.type as string] ?? { bg: "#F1F5F9", color: "#64748B" };
-                        const reqs = Array.isArray(g.requirements) ? g.requirements as string[] : [];
-                        return (
-                          <div key={idx} className="fund-card">
-                            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                                  <div className="fund-title">{String(g.title)}</div>
-                                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 600, background: tc.bg, color: tc.color }}>{String(g.type)}</span>
-                                  <span style={{ fontSize: 10, background: "#EFF4FF", color: "#2D5BE3", padding: "2px 8px", borderRadius: 99 }}>{matchScore}% match</span>
-                                </div>
-                                <div className="fund-meta">{String(g.agency)} · {String(g.deadline)}</div>
-                                <div className="fund-amt">{String(g.amount)}</div>
-                                {g.description && <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{String(g.description)}</div>}
-                                {reqs.length > 0 && (
-                                  <div style={{ marginTop: 8 }}>
-                                    <div style={{ fontSize: 11, color: "#64748B", marginBottom: 4 }}>Key requirements:</div>
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                      {reqs.map((step, si) => (
-                                        <span key={si} style={{ fontSize: 10, background: "#E2E8F0", color: "#64748B", padding: "2px 8px", borderRadius: 99 }}>{step}</span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {g.applyUrl && <a href={String(g.applyUrl)} target="_blank" rel="noreferrer"><button className="fund-btn">Apply →</button></a>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </>
-                )}
-              </>
-            )}
-
             {screen === "ai" && (
               <>
                 <div className="page-title">AI assistant</div>
                 <div className="page-sub">Ask anything about your business setup, funding, certifications, and strategy</div>
                 <div style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>AI answers can be wrong or outdated and are not legal, tax or financial advice. Verify important details with the official agency or a licensed professional.</div>
                 <div className="chips">
-                  {["What steps should I prioritize this week?", "What grants am I eligible for right now?", "Do I need to file a BOI report with FinCEN?", "Explain SAM.gov registration step by step", "What certifications should I apply for?", "How do I build business credit fast?"].map(p => (
+                  {["What steps should I prioritize this week?", "Which federal programs fit my business?", "Do I need to file a BOI report with FinCEN?", "Explain SAM.gov registration step by step", "What certifications should I apply for?", "How do I build business credit fast?"].map(p => (
                     <button key={p} className="chip" onClick={() => sendChat(p)}>{p}</button>
                   ))}
                 </div>
